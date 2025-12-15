@@ -1,0 +1,173 @@
+<% const currentPage = 'dashboard'; const pageTitle = 'Dashboard Amministratore'; %>
+
+<div class="stats-grid">
+  <div class="stat-card info">
+    <div class="stat-header">
+      <div>
+        <div class="stat-title">Rapporti Oggi</div>
+        <div class="stat-value"><%= stats?.todayReports || 0 %></div>
+      </div>
+      <div class="stat-icon">
+        <i class="fas fa-file-alt"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-card success">
+    <div class="stat-header">
+      <div>
+        <div class="stat-title">Veicoli Attivi</div>
+        <div class="stat-value"><%= stats.activeVehicles %></div>
+      </div>
+      <div class="stat-icon">
+        <i class="fas fa-car"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-card warning">
+    <div class="stat-header">
+      <div>
+        <div class="stat-title">Manutenzioni Pending</div>
+        <div class="stat-value"><%= stats.pendingMaintenance %></div>
+      </div>
+      <div class="stat-icon">
+        <i class="fas fa-wrench"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-card error">
+    <div class="stat-header">
+      <div>
+        <div class="stat-title">Scadenze Imminenti</div>
+        <div class="stat-value"><%= stats.expiringContracts + stats.maintenanceAlerts %></div>
+      </div>
+      <div class="stat-icon">
+        <i class="fas fa-bell"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 1.5rem;">
+  <!-- Rapporti Recenti -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">Rapporti Recenti</h2>
+        <p class="card-subtitle">Ultimi 10 rapporti inseriti</p>
+      </div>
+      <a href="/admin/reports" class="btn btn-outline">Vedi Tutti</a>
+    </div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Autista</th>
+            <th>Veicolo</th>
+            <th>Stato</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (recentReports.length === 0) { %>
+            <tr><td colspan="4" class="text-center text-secondary">Nessun rapporto disponibile</td></tr>
+          <% } else { %>
+            <% recentReports.forEach(report => { %>
+              <tr>
+                <td><%= new Date(report.data).toLocaleDateString('it-IT') %></td>
+                <td><%= report.nome %> <%= report.cognome %></td>
+                <td><%= report.targa %></td>
+                <td>
+                  <% if (report.stato === 'completato') { %>
+                    <span class="badge badge-success">Completato</span>
+                  <% } else if (report.stato === 'partito') { %>
+                    <span class="badge badge-info">In Corso</span>
+                  <% } else { %>
+                    <span class="badge badge-gray">Preparazione</span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Manutenzioni Urgenti -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">Manutenzioni Urgenti</h2>
+        <p class="card-subtitle">Richieste con priorità alta</p>
+      </div>
+      <a href="/admin/maintenance" class="btn btn-outline">Vedi Tutte</a>
+    </div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Veicolo</th>
+            <th>Autista</th>
+            <th>Priorità</th>
+            <th>Stato</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (urgentMaintenance.length === 0) { %>
+            <tr><td colspan="4" class="text-center text-secondary">Nessuna manutenzione urgente</td></tr>
+          <% } else { %>
+            <% urgentMaintenance.forEach(req => { %>
+              <tr>
+                <td><%= req.targa %></td>
+                <td><%= req.nome %> <%= req.cognome %></td>
+                <td>
+                  <% if (req.priorita === 'critica') { %>
+                    <span class="badge badge-error">Critica</span>
+                  <% } else if (req.priorita === 'alta') { %>
+                    <span class="badge badge-warning">Alta</span>
+                  <% } else if (req.priorita === 'media') { %>
+                    <span class="badge badge-info">Media</span>
+                  <% } else { %>
+                    <span class="badge badge-gray">Bassa</span>
+                  <% } %>
+                </td>
+                <td>
+                  <% if (req.stato === 'in_attesa') { %>
+                    <span class="badge badge-warning">In Attesa</span>
+                  <% } else if (req.stato === 'in_lavorazione') { %>
+                    <span class="badge badge-info">In Lavorazione</span>
+                  <% } else { %>
+                    <span class="badge badge-success">Completata</span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card mt-3">
+  <div class="card-header">
+    <h2 class="card-title">Azioni Rapide</h2>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    <a href="/admin/reports" class="btn btn-primary">
+      <i class="fas fa-file-alt"></i> Gestisci Rapporti
+    </a>
+    <a href="/admin/vehicles/new" class="btn btn-success">
+      <i class="fas fa-plus"></i> Aggiungi Veicolo
+    </a>
+    <a href="/admin/employees/new" class="btn btn-secondary">
+      <i class="fas fa-user-plus"></i> Aggiungi Dipendente
+    </a>
+    <a href="/admin/expiration-alerts" class="btn btn-warning">
+      <i class="fas fa-bell"></i> Controlla Scadenze
+    </a>
+  </div>
+</div>

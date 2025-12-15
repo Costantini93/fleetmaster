@@ -1,0 +1,124 @@
+<% const currentPage = 'vehicles'; const pageTitle = 'Contratti Noleggio - ' + vehicle.targa; %>
+
+<div class="card" style="max-width: 1200px; margin: 0 auto;">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Contratti Noleggio - <%= vehicle.targa %></h2>
+      <p class="card-subtitle"><%= vehicle.modello %> (<%= vehicle.anno %>)</p>
+    </div>
+    <a href="/admin/vehicles" class="btn btn-outline">
+      <i class="fas fa-arrow-left"></i> Indietro
+    </a>
+  </div>
+
+  <!-- Form nuovo contratto -->
+  <div class="mb-4" style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px;">
+    <h3 class="font-bold mb-3">Aggiungi Contratto</h3>
+    <form action="/admin/vehicles/<%= vehicle.id %>/contracts" method="POST">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label">Data Inizio *</label>
+          <input type="date" name="data_inizio" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Data Scadenza *</label>
+          <input type="date" name="data_scadenza" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Fornitore</label>
+          <input type="text" name="fornitore" class="form-input" placeholder="Nome fornitore">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Costo Mensile (€)</label>
+          <input type="number" step="0.01" name="costo_mensile" class="form-input" placeholder="es. 350.00">
+        </div>
+
+        <div class="form-group" style="grid-column: span 2;">
+          <label class="form-label">Note</label>
+          <input type="text" name="note" class="form-input" placeholder="Note aggiuntive">
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary mt-3">
+        <i class="fas fa-plus"></i> Aggiungi Contratto
+      </button>
+    </form>
+  </div>
+
+  <!-- Tabella contratti -->
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Data Inizio</th>
+          <th>Data Scadenza</th>
+          <th>Fornitore</th>
+          <th>Costo Mensile</th>
+          <th>Note</th>
+          <th>Stato</th>
+          <th>Azioni</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (contracts.length === 0) { %>
+          <tr><td colspan="7" class="text-center text-secondary">Nessun contratto registrato</td></tr>
+        <% } else { %>
+          <% contracts.forEach(contract => { %>
+            <% 
+              const scadenza = new Date(contract.data_scadenza);
+              const oggi = new Date();
+              const differenzaGiorni = Math.ceil((scadenza - oggi) / (1000 * 60 * 60 * 24));
+            %>
+            <tr>
+              <td><%= new Date(contract.data_inizio).toLocaleDateString('it-IT') %></td>
+              <td><%= new Date(contract.data_scadenza).toLocaleDateString('it-IT') %></td>
+              <td><%= contract.fornitore || '-' %></td>
+              <td>
+                <% if (contract.costo_mensile) { %>
+                  € <%= parseFloat(contract.costo_mensile).toFixed(2) %>
+                <% } else { %>
+                  -
+                <% } %>
+              </td>
+              <td><%= contract.note || '-' %></td>
+              <td>
+                <% if (differenzaGiorni < 0) { %>
+                  <span class="badge badge-danger">Scaduto</span>
+                <% } else if (differenzaGiorni <= 30) { %>
+                  <span class="badge badge-warning">In scadenza (<%= differenzaGiorni %> gg)</span>
+                <% } else { %>
+                  <span class="badge badge-success">Attivo</span>
+                <% } %>
+              </td>
+              <td>
+                <button onclick="deleteContract(<%= contract.id %>)" class="btn-icon" title="Elimina">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+async function deleteContract(id) {
+  if (!confirm('Vuoi eliminare questo contratto?')) return;
+  
+  try {
+    const response = await fetch(`/admin/contracts/${id}/delete`, { method: 'POST' });
+    const data = await response.json();
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert(data.message);
+    }
+  } catch (error) {
+    alert('Errore di connessione');
+  }
+}
+</script>

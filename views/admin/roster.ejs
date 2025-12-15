@@ -1,0 +1,408 @@
+<% const currentPage = 'roster'; const pageTitle = 'Gestione Roster'; %>
+
+<style>
+  .date-picker-container {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 1.5rem;
+  }
+
+  .date-picker-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .date-picker-controls input[type="date"] {
+    padding: 0.75rem 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: all 0.2s;
+    min-width: 220px;
+  }
+
+  .date-picker-controls input[type="date"]:hover {
+    border-color: #3b82f6;
+  }
+
+  .date-picker-controls input[type="date"]:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .stat-card-roster {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border-left: 4px solid;
+  }
+
+  .stat-card-roster.blue {
+    border-left-color: #3b82f6;
+  }
+
+  .stat-card-roster.green {
+    border-left-color: #10b981;
+  }
+
+  .stat-card-roster.orange {
+    border-left-color: #f59e0b;
+  }
+
+  .stat-card-roster h3 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem 0;
+  }
+
+  .stat-card-roster p {
+    font-size: 0.95rem;
+    color: #64748b;
+    margin: 0;
+  }
+
+  .actions-bar {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-save-roster {
+    margin-left: auto;
+    background: #10b981;
+    font-weight: 600;
+  }
+
+  .btn-save-roster:hover {
+    background: #059669;
+  }
+
+  .driver-row {
+    transition: background 0.2s;
+  }
+
+  .driver-row:hover {
+    background: #f8fafc;
+  }
+
+  .selected-date-display {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #3b82f6;
+    font-weight: 500;
+    color: #1e40af;
+  }
+</style>
+
+<div class="page-header">
+  <h1>📅 Gestione Roster</h1>
+  <p style="color: #64748b; margin-top: 0.5rem; font-size: 1.05rem;">
+    Seleziona una data e organizza i turni dei driver
+  </p>
+</div>
+
+<% if (success && success.length > 0) { %>
+  <div class="alert alert-success"><%= success[0] %></div>
+<% } %>
+<% if (error && error.length > 0) { %>
+  <div class="alert alert-error"><%= error[0] %></div>
+<% } %>
+
+<!-- Selettore Data -->
+<div class="date-picker-container">
+  <div class="date-picker-controls">
+    <label for="rosterDate" style="font-weight: 600; color: #1e293b;">📆 Seleziona data:</label>
+    <input
+      type="date"
+      id="rosterDate"
+      value="<%= selectedDate %>"
+      onchange="changeRosterDate()"
+    >
+    <button onclick="selectToday()" class="btn btn-secondary">Oggi</button>
+  </div>
+</div>
+
+<!-- Data Selezionata -->
+<div class="selected-date-display">
+  📌 Turno per: <strong><%= dateDisplay %></strong>
+</div>
+
+<!-- Stats -->
+<div class="stat-grid">
+  <div class="stat-card-roster blue">
+    <h3 style="color: #3b82f6;"><%= activeDrivers.length %></h3>
+    <p>Driver Attivi</p>
+  </div>
+
+  <div class="stat-card-roster green">
+    <h3 style="color: #10b981;" id="selectedCount"><%= selectedDrivers.length %></h3>
+    <p>In Turno</p>
+  </div>
+
+  <div class="stat-card-roster orange">
+    <h3 style="color: #f59e0b;"><%= fixedVehicleCount %></h3>
+    <p>Con Furgone Fisso</p>
+  </div>
+</div>
+
+<!-- Azioni -->
+<div class="actions-bar">
+  <button onclick="selectAll()" class="btn btn-primary">
+    ✅ Seleziona Tutti
+  </button>
+  <button onclick="deselectAll()" class="btn btn-secondary">
+    ❌ Deseleziona Tutti
+  </button>
+  <button onclick="resetDay()" class="btn" style="background: #f59e0b; color: white;">
+    🔄 Resetta Giornata
+  </button>
+  <button onclick="autoAssign()" class="btn" style="background: #8b5cf6; color: white;">
+    🚀 Assegnazione Automatica
+  </button>
+  <button onclick="saveRoster()" class="btn btn-save-roster">
+    💾 Salva Roster per <span id="saveButtonDate"></span>
+  </button>
+</div>
+
+<!-- Tabella Driver -->
+<div class="card">
+  <h3 style="margin-bottom: 1.5rem;">Driver Disponibili (<%= activeDrivers.length %>)</h3>
+  
+  <% if (activeDrivers.length === 0) { %>
+    <div style="text-align: center; padding: 3rem; color: #64748b;">
+      <p style="font-size: 1.1rem;">Nessun driver attivo trovato</p>
+      <a href="/admin/employees" class="btn btn-primary" style="margin-top: 1rem;">Aggiungi Driver</a>
+    </div>
+  <% } else { %>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width: 50px;">
+              <input type="checkbox" id="selectAllCheckbox" onchange="toggleAll(this)" 
+                style="width: 20px; height: 20px; cursor: pointer;">
+            </th>
+            <th>Driver</th>
+            <th>Username</th>
+            <th>Telefono</th>
+            <th>Furgone Assegnato</th>
+            <th>Stato</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% activeDrivers.forEach(driver => {
+            const isSelected = selectedDrivers.includes(driver.id);
+            const hasFixedVehicle = driver.fixed_vehicle_id !== null;
+          %>
+            <tr class="driver-row">
+              <td>
+                <input
+                  type="checkbox"
+                  class="driver-checkbox"
+                  data-driver-id="<%= driver.id %>"
+                  <%= isSelected ? 'checked' : '' %>
+                  style="width: 20px; height: 20px; cursor: pointer;"
+                  onchange="updateStats()">
+              </td>
+              <td>
+                <strong style="color: #1e293b;"><%= driver.nome %> <%= driver.cognome %></strong>
+              </td>
+              <td style="color: #64748b;"><%= driver.username %></td>
+              <td style="color: #64748b;"><%= driver.telefono || '-' %></td>
+              <td>
+                <% if (hasFixedVehicle && driver.vehicle_targa) { %>
+                  <span class="badge" style="background: #10b981;">🚚 <%= driver.vehicle_targa %></span>
+                <% } else { %>
+                  <span class="badge" style="background: #64748b;">Nessuno</span>
+                <% } %>
+              </td>
+              <td>
+                <% if (isSelected) { %>
+                  <span class="badge" style="background: #10b981;">✅ In Turno</span>
+                <% } else { %>
+                  <span class="badge" style="background: #94a3b8;">Libero</span>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<script>
+  let selectedDate = '<%= selectedDate %>';
+
+  function changeRosterDate() {
+    const newDate = document.getElementById('rosterDate').value;
+    if (newDate) {
+      window.location.href = `/admin/roster?date=${newDate}`;
+    }
+  }
+
+  function selectToday() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('rosterDate').value = today;
+    window.location.href = `/admin/roster?date=${today}`;
+  }
+
+  function updateSaveButtonDate() {
+    const date = new Date(selectedDate + 'T12:00:00');
+    const formatted = date.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+    document.getElementById('saveButtonDate').textContent = formatted;
+  }
+
+  function updateStats() {
+    const checked = document.querySelectorAll('.driver-checkbox:checked').length;
+    document.getElementById('selectedCount').textContent = checked;
+  }
+
+  // Inizializza
+  updateSaveButtonDate();
+
+  function toggleAll(checkbox) {
+    const checkboxes = document.querySelectorAll('.driver-checkbox');
+    checkboxes.forEach(cb => cb.checked = checkbox.checked);
+    updateStats();
+  }
+
+  function selectAll() {
+    const checkboxes = document.querySelectorAll('.driver-checkbox');
+    checkboxes.forEach(cb => cb.checked = true);
+    document.getElementById('selectAllCheckbox').checked = true;
+    updateStats();
+  }
+
+  function deselectAll() {
+    const checkboxes = document.querySelectorAll('.driver-checkbox');
+    checkboxes.forEach(cb => cb.checked = false);
+    document.getElementById('selectAllCheckbox').checked = false;
+    updateStats();
+  }
+
+  function resetDay() {
+    const date = new Date(selectedDate + 'T12:00:00');
+    const formatted = date.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    if (!confirm(`🔄 Vuoi resettare il roster per ${formatted}?\n\nQuesto cancellerà tutte le selezioni per questa data.`)) {
+      return;
+    }
+
+    fetch('/admin/roster/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rosterDate: selectedDate })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        alert(`✅ ${data.message}`);
+        location.reload();
+      } else {
+        alert(`❌ Errore: ${data.message}`);
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      alert('❌ Errore di comunicazione con il server');
+    });
+  }
+
+  function saveRoster() {
+    const checkboxes = document.querySelectorAll('.driver-checkbox:checked');
+    const driverIds = Array.from(checkboxes).map(cb => parseInt(cb.dataset.driverId));
+
+    if (driverIds.length === 0) {
+      alert('⚠️ Seleziona almeno un driver prima di salvare!');
+      return;
+    }
+
+    const date = new Date(selectedDate + 'T12:00:00');
+    const formatted = date.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    if (!confirm(`💾 Salvare il roster per ${formatted}?\n\n${driverIds.length} driver selezionati`)) {
+      return;
+    }
+
+    fetch('/admin/roster/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        driverIds: driverIds,
+        rosterDate: selectedDate
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        alert(`✅ ${data.message}`);
+        location.reload();
+      } else {
+        alert(`❌ Errore: ${data.message}`);
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      alert('❌ Errore di comunicazione con il server');
+    });
+  }
+
+  function autoAssign() {
+    if (!confirm('🚀 Avviare l\'assegnazione automatica?\n\nVerranno assegnati automaticamente i veicoli a tutti i driver in turno per le date con roster salvato.\n\n• Driver con furgone fisso: assegnato quello\n• Driver senza furgone: assegnato casuale tra disponibili')) {
+      return;
+    }
+
+    // Mostra loading
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'loadingAssign';
+    loadingDiv.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); z-index: 9999; text-align: center;';
+    loadingDiv.innerHTML = `
+      <div style="font-size: 3rem; margin-bottom: 1rem;">🚀</div>
+      <div style="font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem;">Assegnazione in corso...</div>
+      <div style="color: #64748b;">Attendere prego</div>
+    `;
+    document.body.appendChild(loadingDiv);
+
+    fetch('/admin/assignments/auto-assign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+      document.body.removeChild(loadingDiv);
+      
+      if (data.success) {
+        alert(data.message);
+        // Reload per mostrare le assegnazioni
+        location.reload();
+      } else {
+        alert(`❌ Errore: ${data.message}`);
+      }
+    })
+    .catch(err => {
+      if (document.getElementById('loadingAssign')) {
+        document.body.removeChild(loadingDiv);
+      }
+      console.error(err);
+      alert('❌ Errore di comunicazione con il server');
+    });
+  }
+</script>

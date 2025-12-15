@@ -1,0 +1,202 @@
+<% const currentPage = 'substitutions'; const pageTitle = 'Gestione Sostituzioni Veicoli'; %>
+
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Registro Sostituzioni Veicoli</h2>
+      <p class="card-subtitle">Gestisci le sostituzioni dei veicoli in manutenzione/riparazione</p>
+    </div>
+  </div>
+
+  <form id="substitutionForm" class="mb-4">
+    <h3 class="font-bold mb-3">Nuova Sostituzione Veicolo</h3>
+    
+    <!-- Info Assignment (se preselezionato) -->
+    <% 
+      const preselectedAssignment = preselectedAssignmentId ? assignments.find(a => a.id == preselectedAssignmentId) : null;
+    %>
+    <% if (preselectedAssignment) { %>
+    <div style="background: #f0f9ff; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #0891b2;">
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+        <div>
+          <strong style="color: #0c4a6e;">Driver:</strong>
+          <div><%= preselectedAssignment.driver_nome %> <%= preselectedAssignment.driver_cognome %></div>
+        </div>
+        <div>
+          <strong style="color: #0c4a6e;">Veicolo Attuale:</strong>
+          <div><%= preselectedAssignment.targa %></div>
+        </div>
+        <div>
+          <strong style="color: #0c4a6e;">Data:</strong>
+          <div><%= new Date(preselectedAssignment.data).toLocaleDateString('it-IT') %></div>
+        </div>
+      </div>
+    </div>
+    <input type="hidden" name="assignment_id" value="<%= preselectedAssignment.id %>">
+    <% } %>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+      <% if (!preselectedAssignment) { %>
+      <div class="form-group mb-0">
+        <label class="form-label">Driver Assegnato *</label>
+        <select name="assignment_id" class="form-select" required id="assignmentSelect">
+          <option value="">Seleziona driver</option>
+          <% assignments.forEach(a => { %>
+            <option value="<%= a.id %>" 
+                    data-vehicle="<%= a.vehicle_id %>" 
+                    data-targa="<%= a.targa %>"
+                    data-driver="<%= a.driver_nome %> <%= a.driver_cognome %>"
+                    data-date="<%= a.data %>">
+              <%= a.driver_nome %> <%= a.driver_cognome %> - <%= a.targa %>
+            </option>
+          <% }) %>
+        </select>
+      </div>
+      <% } %>
+
+      <div class="form-group mb-0">
+        <label class="form-label">Veicolo Sostitutivo *</label>
+        <select name="vehicle_sostituto_id" class="form-select" required>
+          <option value="">Seleziona veicolo</option>
+          <% availableVehicles.forEach(vehicle => { %>
+            <option value="<%= vehicle.id %>"><%= vehicle.targa %> - <%= vehicle.modello %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="form-group mb-0">
+        <label class="form-label">Motivo *</label>
+        <select name="motivo" class="form-select" required>
+          <option value="">Seleziona</option>
+          <option value="guasto" <%= preselectedAssignment ? 'selected' : '' %>>Guasto Meccanico</option>
+          <option value="manutenzione">Manutenzione Programmata</option>
+          <option value="incidente">Incidente</option>
+          <option value="altro">Altro</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group mt-3">
+      <label class="form-label">Note</label>
+      <textarea name="note" class="form-textarea" rows="2" placeholder="Note aggiuntive sulla sostituzione..."></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+      <i class="fas fa-exchange-alt"></i> Sostituisci Veicolo
+    </button>
+  </form>
+
+  <% if (preselectedAssignment) { %>
+  <script>
+    // Scroll al form e evidenzia
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.getElementById('substitutionForm');
+      form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      form.style.border = '3px solid #f59e0b';
+      form.style.padding = '1.5rem';
+      form.style.borderRadius = '12px';
+      setTimeout(() => {
+        form.style.border = '';
+        form.style.padding = '';
+      }, 3000);
+    });
+  </script>
+  <% } %>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Driver</th>
+          <th>Veicolo Sostituito</th>
+          <th>Veicolo Sostitutivo</th>
+          <th>Data Sostituzione</th>
+          <th>Motivo</th>
+          <th>Stato</th>
+          <th>Note</th>
+          <th>Azioni</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (substitutions.length === 0) { %>
+          <tr><td colspan="8" class="text-center text-secondary">Nessuna sostituzione registrata</td></tr>
+        <% } else { %>
+          <% substitutions.forEach(sub => { %>
+            <tr>
+              <td><%= sub.driver_nome %> <%= sub.driver_cognome %></td>
+              <td><%= sub.originale_targa %> - <%= sub.originale_modello %></td>
+              <td><%= sub.sostituto_targa %> - <%= sub.sostituto_modello %></td>
+              <td><%= new Date(sub.data_inizio).toLocaleDateString('it-IT') %></td>
+              <td>
+                <% if (sub.motivo === 'guasto') { %>
+                  <span class="badge badge-error">Guasto</span>
+                <% } else if (sub.motivo === 'manutenzione') { %>
+                  <span class="badge badge-info">Manutenzione</span>
+                <% } else if (sub.motivo === 'incidente') { %>
+                  <span class="badge badge-warning">Incidente</span>
+                <% } else { %>
+                  <span class="badge badge-gray">Altro</span>
+                <% } %>
+              </td>
+              <td>
+                <% if (sub.compilata === 1) { %>
+                  <span class="badge badge-success">Compilata</span>
+                <% } else { %>
+                  <span class="badge badge-warning">Da Compilare</span>
+                <% } %>
+              </td>
+              <td><%= sub.note || '-' %></td>
+              <td>
+                <button onclick="deleteSubstitution(<%= sub.id %>)" class="btn-icon" title="Elimina">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+document.getElementById('substitutionForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  const formData = new FormData(this);
+  const data = Object.fromEntries(formData);
+  
+  try {
+    const response = await fetch('/admin/substitutions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const result = await response.json();
+    
+    if (result.success) {
+      window.location.reload();
+    } else {
+      alert(result.message);
+    }
+  } catch (error) {
+    alert('Errore di connessione');
+  }
+});
+
+async function deleteSubstitution(id) {
+  if (!confirm('Vuoi eliminare questa sostituzione?')) return;
+  
+  try {
+    const response = await fetch(`/admin/substitutions/${id}/delete`, { method: 'POST' });
+    const data = await response.json();
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert(data.message);
+    }
+  } catch (error) {
+    alert('Errore di connessione');
+  }
+}
+</script>

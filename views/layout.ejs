@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sistema di gestione flotta veicoli ROBI">
+  <meta name="theme-color" content="#2563eb">
+  
+  <!-- PWA Meta Tags -->
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Fleet Master">
+  
+  <title><%= title || 'Fleet Master' %></title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="main-container">
+    <!-- Sidebar -->
+    <% if (user) { %>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="/" class="sidebar-logo">
+          <img src="/logo2.svg" alt="Fleet Master" style="height: 140px; width: auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <% if (user.ruolo === 'admin') { %>
+          <div class="nav-section">
+            <div class="nav-section-title">Menu Principale</div>
+            <a href="/admin/dashboard" class="nav-link <%= currentPage === 'dashboard' ? 'active' : '' %>">
+              <span class="nav-icon"><i class="fas fa-home"></i></span>
+              <span>Dashboard</span>
+            </a>
+            <a href="/admin/expiration-alerts" class="nav-link <%= currentPage === 'expiration' ? 'active' : '' %>">
+              <span class="nav-icon"><i class="fas fa-bell"></i></span>
+              <span>Scadenze</span>
+            </a>
+          </div>
+
+          <div class="nav-section">
+            <div class="nav-section-title">Gestione</div>
+            <a href="/admin/employees" class="nav-link <%= currentPage === 'employees' ? 'active' : '' %>">
+              <span class="nav-icon"><i class="fas fa-users"></i></span>
+              <span>Driver</span>
+            </a>
+            <a href="/admin/vehicles" class="nav-link <%= currentPage === 'vehicles' ? 'active' : '' %>">
+              <span class="nav-icon"><i class="fas fa-car"></i></span>
+              <span>Veicoli</span>
+            </a>
+            <a href="/admin/roster" class="nav-link <%= currentPage === 'roster' ? 'active' : '' %>">
+              <span class="nav-icon"><i class="fas fa-calendar-alt"></i></span>
+              <span>Turni</span>
+            </a>
+          </div>
+
+          <div class="nav-section">
+            <div class="nav-section-title">Manutenzioni</div>
+            <a href="/admin/maintenance" class="nav-link <%= currentPage === 'maintenance' ? 'active' : '' %>">
+              <span class="nav-icon"><i class="fas fa-wrench"></i></span>
+              <span>Richieste</span>
+              <% if (typeof unreadMaintenanceCount !== 'undefined' && unreadMaintenanceCount > 0) { %>
+                <span class="badge" style="background: #dc2626; color: white; font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 10px; margin-left: 0.5rem;"><%= unreadMaintenanceCount %></span>
+              <% } %>
+            </a>
+            <a href="/admin/substitutions" class="nav-link <%= currentPage === 'substitutions' ? 'active' : '' %>">
+              <span class="nav-icon"><i class="fas fa-exchange-alt"></i></span>
+              <span>Sostituzioni</span>
+            </a>
+            <a href="/admin/activity-logs" class="nav-link <%= currentPage === 'logs' ? 'active' : '' %>">
+              <span class="nav-icon"><i class="fas fa-history"></i></span>
+              <span>Log Attività</span>
+            </a>
+          </div>
+        <% } else { %>
+          <div class="nav-section">
+            <div class="nav-section-title">Menu Rider</div>
+            <a href="/rider/dashboard" class="nav-link <%= currentPage === 'dashboard' ? 'active' : '' %>">
+              <span class="nav-icon"><i class="fas fa-home"></i></span>
+              <span>Dashboard</span>
+            </a>
+            <a href="/rider/maintenance/new" class="nav-link <%= currentPage === 'new-maintenance' ? 'active' : '' %>">
+              <span class="nav-icon"><i class="fas fa-exclamation-triangle"></i></span>
+              <span>Segnala Problema</span>
+            </a>
+          </div>
+        <% } %>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar">
+            <%= user.nome.charAt(0) + user.cognome.charAt(0) %>
+          </div>
+          <div class="user-details">
+            <h4><%= user.nome %> <%= user.cognome %></h4>
+            <p><%= user.ruolo === 'admin' ? 'Amministratore' : 'Autista' %></p>
+          </div>
+        </div>
+        <a href="/logout" class="btn btn-outline w-full" style="background: white; color: #1e293b; border-color: #e2e8f0;">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Esci</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Overlay Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <% } %>
+
+    <!-- Main Content -->
+    <div class="content-wrapper">
+      <% if (user) { %>
+      <div class="content">
+        <div class="topbar">
+          <div class="topbar-left">
+            <button class="btn-icon mobile-toggle" id="sidebarToggle">
+              <i class="fas fa-bars"></i>
+            </button>
+            <div>
+              <h1><%= pageTitle || title %></h1>
+              <% if (locals.breadcrumb) { %>
+              <div class="breadcrumb">
+                <% breadcrumb.forEach((item, index) => { %>
+                  <span><%= item %></span>
+                  <% if (index < breadcrumb.length - 1) { %>
+                    <span>/</span>
+                  <% } %>
+                <% }) %>
+              </div>
+              <% } %>
+            </div>
+          </div>
+          <div class="topbar-right">
+            <button class="btn-icon" id="installPWA" style="display: none;" title="Installa App">
+              <i class="fas fa-download"></i>
+            </button>
+            <a href="/change-password" class="btn-icon" title="Cambia Password">
+              <i class="fas fa-key"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Flash Messages -->
+        <% if (success_msg && success_msg.length > 0) { %>
+          <div class="flash-message flash-success">
+            <i class="fas fa-check-circle"></i>
+            <span><%= success_msg %></span>
+          </div>
+        <% } %>
+        <% if (error_msg && error_msg.length > 0) { %>
+          <div class="flash-message flash-error">
+            <i class="fas fa-times-circle"></i>
+            <span><%= error_msg %></span>
+          </div>
+        <% } %>
+        <% if (error && error.length > 0) { %>
+          <div class="flash-message flash-error">
+            <i class="fas fa-times-circle"></i>
+            <span><%= error %></span>
+          </div>
+        <% } %>
+
+        <%- body %>
+      </div>
+      <% } else { %>
+        <%- body %>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/js/app.js"></script>
+</body>
+</html>

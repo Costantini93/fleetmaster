@@ -1,0 +1,104 @@
+<% const currentPage = 'dashboard'; const pageTitle = 'Rapporto di Ritorno'; %>
+
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+  <div class="card-header">
+    <h2 class="card-title">Rapporto di Ritorno</h2>
+    <p class="card-subtitle">Compila i dati di ritorno</p>
+  </div>
+
+  <div class="mb-4" style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px;">
+    <h3 class="font-bold mb-3">Dati Partenza</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+      <div><strong>Veicolo:</strong> <%= report.targa %></div>
+      <div><strong>Codice Giro:</strong> <%= report.codice_giro || '-' %></div>
+      <div><strong>Km Partenza:</strong> <%= report.km_partenza %> km</div>
+      <div><strong>Ora Partenza:</strong> <%= new Date(report.ora_partenza).toLocaleTimeString('it-IT') %></div>
+    </div>
+  </div>
+
+  <form action="/rider/reports/<%= report.id %>/return" method="POST">
+    <div class="form-group">
+      <label class="form-label">Km Arrivo *</label>
+      <input type="number" name="km_arrivo" class="form-input" required min="<%= report.km_partenza %>" value="<%= report.km_partenza %>">
+      <p class="form-help">Deve essere >= <%= report.km_partenza %> km</p>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Ora Rientro *</label>
+      <input type="time" name="ora_rientro" class="form-input" required min="<%= new Date(report.ora_partenza).toTimeString().slice(0, 5) %>">
+      <p class="form-help">Deve essere >= <%= new Date(report.ora_partenza).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) %></p>
+    </div>
+
+    <h3 class="font-bold mb-3 mt-4">Rifornimento</h3>
+    
+    <div class="form-group">
+      <label class="form-label">Hai fatto rifornimento? *</label>
+      <select name="metodo_rifornimento" class="form-select" required id="metodoRifornimento">
+        <option value="">Seleziona</option>
+        <option value="IP">IP</option>
+        <option value="DKV">DKV</option>
+        <option value="Nessuno">Nessuno</option>
+      </select>
+    </div>
+
+    <div id="rifornimentoFields" style="display: none;">
+      <div class="form-group" id="dkvTesseraGroup" style="display: none;">
+        <label class="form-label">Numero Tessera DKV *</label>
+        <input type="text" name="numero_tessera_dkv" class="form-input" id="numeroTesseraDkv">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Importo Rifornimento (€) *</label>
+        <input type="number" step="0.01" name="importo_rifornimento" class="form-input" id="importoRifornimento" min="0">
+      </div>
+    </div>
+
+    <div class="flex gap-2">
+      <button type="submit" class="btn btn-success">
+        <i class="fas fa-check"></i> Completa Rapporto
+      </button>
+      <a href="/rider/dashboard" class="btn btn-outline">
+        <i class="fas fa-times"></i> Annulla
+      </a>
+    </div>
+  </form>
+</div>
+
+<script>
+const metodoSelect = document.getElementById('metodoRifornimento');
+const rifornimentoFields = document.getElementById('rifornimentoFields');
+const dkvTesseraGroup = document.getElementById('dkvTesseraGroup');
+const numeroTesseraDkv = document.getElementById('numeroTesseraDkv');
+const importoRifornimento = document.getElementById('importoRifornimento');
+
+metodoSelect.addEventListener('change', function() {
+  const metodo = this.value;
+  
+  if (metodo === 'IP') {
+    rifornimentoFields.style.display = 'block';
+    dkvTesseraGroup.style.display = 'none';
+    numeroTesseraDkv.required = false;
+    importoRifornimento.required = true;
+  } else if (metodo === 'DKV') {
+    rifornimentoFields.style.display = 'block';
+    dkvTesseraGroup.style.display = 'block';
+    numeroTesseraDkv.required = true;
+    importoRifornimento.required = true;
+  } else {
+    rifornimentoFields.style.display = 'none';
+    dkvTesseraGroup.style.display = 'none';
+    numeroTesseraDkv.required = false;
+    importoRifornimento.required = false;
+  }
+});
+
+document.querySelector('form').addEventListener('submit', function(e) {
+  const kmArrivo = parseInt(document.querySelector('[name="km_arrivo"]').value);
+  const kmPartenza = <%= report.km_partenza %>;
+  
+  if (kmArrivo < kmPartenza) {
+    e.preventDefault();
+    alert('I km di arrivo non possono essere inferiori ai km di partenza');
+  }
+});
+</script>

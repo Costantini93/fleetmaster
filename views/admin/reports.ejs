@@ -1,0 +1,201 @@
+<% const currentPage = 'reports'; const pageTitle = 'Rapporti Giornalieri'; %>
+
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Rapporti Giornalieri</h2>
+      <p class="card-subtitle">Visualizza e gestisci tutti i rapporti</p>
+    </div>
+  </div>
+
+  <!-- Filtri -->
+  <form method="GET" class="mb-3">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+      <div class="form-group mb-0">
+        <label class="form-label">Data</label>
+        <input type="date" name="date" class="form-input" value="<%= filters.date %>">
+      </div>
+      <div class="form-group mb-0">
+        <label class="form-label">Autista</label>
+        <select name="driver" class="form-select">
+          <option value="all">Tutti</option>
+          <% drivers.forEach(driver => { %>
+            <option value="<%= driver.id %>" <%= filters.driver == driver.id ? 'selected' : '' %>>
+              <%= driver.nome %> <%= driver.cognome %>
+            </option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="form-group mb-0">
+        <label class="form-label">Veicolo</label>
+        <select name="vehicle" class="form-select">
+          <option value="all">Tutti</option>
+          <% vehicles.forEach(vehicle => { %>
+            <option value="<%= vehicle.id %>" <%= filters.vehicle == vehicle.id ? 'selected' : '' %>>
+              <%= vehicle.targa %>
+            </option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="form-group mb-0">
+        <label class="form-label">Stato</label>
+        <select name="status" class="form-select">
+          <option value="all" <%= filters.status === 'all' ? 'selected' : '' %>>Tutti</option>
+          <option value="preparazione" <%= filters.status === 'preparazione' ? 'selected' : '' %>>Preparazione</option>
+          <option value="partito" <%= filters.status === 'partito' ? 'selected' : '' %>>In Corso</option>
+          <option value="completato" <%= filters.status === 'completato' ? 'selected' : '' %>>Completato</option>
+        </select>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-3">
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-filter"></i> Filtra
+      </button>
+      <a href="/admin/reports" class="btn btn-outline">
+        <i class="fas fa-redo"></i> Reset
+      </a>
+      <a href="/api/reports/export?<%= new URLSearchParams(filters).toString() %>" class="btn btn-success">
+        <i class="fas fa-file-csv"></i> Esporta CSV
+      </a>
+    </div>
+  </form>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th><input type="checkbox" id="selectAll"></th>
+          <th>Data</th>
+          <th>Autista</th>
+          <th>Veicolo</th>
+          <th>Codice Giro</th>
+          <th>Km</th>
+          <th>Distanza</th>
+          <th>Stato</th>
+          <th>Azioni</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (reports.length === 0) { %>
+          <tr><td colspan="9" class="text-center text-secondary">Nessun rapporto trovato</td></tr>
+        <% } else { %>
+          <% reports.forEach(report => { %>
+            <tr>
+              <td><input type="checkbox" class="report-checkbox" value="<%= report.id %>"></td>
+              <td><%= new Date(report.data).toLocaleDateString('it-IT') %></td>
+              <td><%= report.nome %> <%= report.cognome %></td>
+              <td><%= report.targa %></td>
+              <td><%= report.codice_giro || '-' %></td>
+              <td><%= report.km_partenza %> - <%= report.km_arrivo || '?' %></td>
+              <td><%= report.distanza_percorsa ? report.distanza_percorsa + ' km' : '-' %></td>
+              <td>
+                <% if (report.stato === 'completato') { %>
+                  <span class="badge badge-success">Completato</span>
+                <% } else if (report.stato === 'partito') { %>
+                  <span class="badge badge-info">In Corso</span>
+                <% } else { %>
+                  <span class="badge badge-gray">Preparazione</span>
+                <% } %>
+              </td>
+              <td>
+                <div class="flex gap-1">
+                  <a href="/admin/reports/<%= report.id %>" class="btn-icon" title="Dettagli">
+                    <i class="fas fa-eye"></i>
+                  </a>
+                  <button onclick="deleteReport(<%= report.id %>)" class="btn-icon" title="Elimina">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pulsante eliminazione multipla -->
+  <% if (reports.length > 0) { %>
+  <div class="mt-4" style="padding: 0 1rem 1rem 1rem;">
+    <button onclick="deleteSelected()" class="btn btn-danger" style="font-size: 1rem; padding: 0.75rem 1.5rem;">
+      <i class="fas fa-trash"></i> Elimina Selezionati (<span id="selectedCount">0</span>)
+    </button>
+  </div>
+  <% } %>
+</div>
+
+<script>
+// Funzione per aggiornare il contatore
+function updateSelectedCount() {
+  const count = document.querySelectorAll('.report-checkbox:checked').length;
+  const countSpan = document.getElementById('selectedCount');
+  if (countSpan) {
+    countSpan.textContent = count;
+  }
+}
+
+// Checkbox master per selezionare/deselezionare tutti
+document.getElementById('selectAll')?.addEventListener('change', function() {
+  document.querySelectorAll('.report-checkbox').forEach(cb => {
+    cb.checked = this.checked;
+  });
+  updateSelectedCount();
+});
+
+// Aggiorna contatore quando si clicca su singoli checkbox
+document.querySelectorAll('.report-checkbox').forEach(cb => {
+  cb.addEventListener('change', function() {
+    updateSelectedCount();
+    // Aggiorna stato checkbox master
+    const total = document.querySelectorAll('.report-checkbox').length;
+    const checked = document.querySelectorAll('.report-checkbox:checked').length;
+    const selectAll = document.getElementById('selectAll');
+    if (selectAll) {
+      selectAll.checked = (checked === total && total > 0);
+      selectAll.indeterminate = (checked > 0 && checked < total);
+    }
+  });
+});
+
+async function deleteReport(id) {
+  if (!confirm('Sei sicuro di voler eliminare questo rapporto?')) return;
+  
+  try {
+    const response = await fetch(`/admin/reports/${id}/delete`, { method: 'POST' });
+    const data = await response.json();
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert(data.message);
+    }
+  } catch (error) {
+    alert('Errore di connessione');
+  }
+}
+
+async function deleteSelected() {
+  const selected = Array.from(document.querySelectorAll('.report-checkbox:checked')).map(cb => cb.value);
+  if (selected.length === 0) {
+    alert('Seleziona almeno un rapporto');
+    return;
+  }
+  
+  if (!confirm(`Vuoi eliminare ${selected.length} rapporto/i?`)) return;
+  
+  try {
+    const response = await fetch('/admin/reports/delete-multiple', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ report_ids: selected })
+    });
+    const data = await response.json();
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert(data.message);
+    }
+  } catch (error) {
+    alert('Errore di connessione');
+  }
+}
+</script>

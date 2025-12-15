@@ -1,0 +1,505 @@
+<% const currentPage = 'dashboard'; const pageTitle = 'Dashboard Amministratore'; %>
+
+<!-- Statistiche -->
+<div class="stats-grid">
+  <div class="stat-card info">
+    <div class="stat-header">
+      <div>
+        <div class="stat-title">Rapporti Oggi</div>
+        <div class="stat-value"><%= stats?.todayReports || 0 %></div>
+      </div>
+      <div class="stat-icon">
+        <i class="fas fa-file-alt"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-card success">
+    <div class="stat-header">
+      <div>
+        <div class="stat-title">Veicoli Attivi</div>
+        <div class="stat-value"><%= stats?.activeVehicles || 0 %></div>
+      </div>
+      <div class="stat-icon">
+        <i class="fas fa-car"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-card warning">
+    <div class="stat-header">
+      <div>
+        <div class="stat-title">In Riparazione</div>
+        <div class="stat-value"><%= stats?.vehiclesInRepair || 0 %></div>
+      </div>
+      <div class="stat-icon">
+        <i class="fas fa-tools"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-card warning">
+    <div class="stat-header">
+      <div>
+        <div class="stat-title">Manutenzioni Pending</div>
+        <div class="stat-value"><%= stats?.pendingMaintenance || 0 %></div>
+      </div>
+      <div class="stat-icon">
+        <i class="fas fa-wrench"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-card error">
+    <div class="stat-header">
+      <div>
+        <div class="stat-title">Scadenze Imminenti</div>
+        <div class="stat-value"><%= (stats?.expiringContracts || 0) + (stats?.maintenanceAlerts || 0) %></div>
+      </div>
+      <div class="stat-icon">
+        <i class="fas fa-bell"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tabella Rapporti Completa -->
+<div class="card mt-3">
+  <div class="card-header">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <h2 class="card-title">📊 Rapporti Giornalieri</h2>
+      <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <form method="GET" style="display: flex; gap: 0.5rem; align-items: center;">
+          <input type="date" name="date" class="form-input" value="<%= selectedDate %>" style="width: auto;">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-filter"></i> Filtra
+          </button>
+          <% if (selectedDate !== today) { %>
+            <a href="/admin/dashboard" class="btn btn-outline">
+              <i class="fas fa-calendar-day"></i> Oggi
+            </a>
+          <% } %>
+        </form>
+        <a href="/admin/dashboard/export-reports-csv?date=<%= selectedDate %>" class="btn btn-success">
+          <i class="fas fa-file-csv"></i> CSV
+        </a>
+        <a href="/admin/dashboard/export-reports-excel?date=<%= selectedDate %>" class="btn btn-info">
+          <i class="fas fa-file-excel"></i> Excel
+        </a>
+      </div>
+    </div>
+  </div>
+  <div style="overflow-x: auto;">
+    <table style="min-width: 1800px;">
+      <thead>
+        <tr>
+          <th style="width: 40px;"><input type="checkbox" id="selectAll"></th>
+          <th>Data</th>
+          <th>Driver</th>
+          <th>Status</th>
+          <th>Targa</th>
+          <th>Codice Rotta</th>
+          <th>KM Partenza</th>
+          <th>KM Rientro</th>
+          <th>KM Percorsi</th>
+          <th>Orario Partenza</th>
+          <th>Orario Rientro</th>
+          <th>Rifornimento</th>
+          <th>Pacchi Resi</th>
+          <th>Foto</th>
+          <th>Azioni</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (recentReports.length === 0) { %>
+          <tr><td colspan="15" class="text-center text-secondary">Nessun rapporto disponibile</td></tr>
+        <% } else { %>
+          <% recentReports.forEach(report => { 
+            // Determina lo stato dinamico
+            let statoHtml = '';
+            if (!report.report_id) {
+              // Assegnazione senza report = In attesa GDB
+              statoHtml = '<span class="badge" style="background: #94a3b8; color: white;">In attesa GDB</span>';
+            } else if (report.km_arrivo) {
+              // Report completato = Rientrato
+              statoHtml = '<span class="badge badge-success">Rientrato</span>';
+              if (report.is_substitution) {
+                statoHtml += ' <span class="badge" style="background: #f59e0b; color: white; margin-left: 4px;"><i class="fas fa-exchange-alt"></i> Sostituzione</span>';
+              }
+            } else if (report.ora_partenza) {
+              // Report partenza compilato = In viaggio
+              // ora_partenza è nel formato "HH:MM"
+              const oraPartenza = report.ora_partenza;
+              statoHtml = '<span class="badge" style="background: #f59e0b; color: white;">In viaggio dalle ' + oraPartenza + '</span>';
+              if (report.is_substitution) {
+                statoHtml += ' <span class="badge" style="background: #f59e0b; color: white; margin-left: 4px;"><i class="fas fa-exchange-alt"></i> Sostituzione</span>';
+              }
+            } else {
+              statoHtml = '<span class="badge" style="background: #94a3b8; color: white;">In attesa GDB</span>';
+            }
+          %>
+            <tr>
+              <!-- Checkbox -->
+              <td>
+                <input type="checkbox" class="report-checkbox" value="<%= report.assignment_id %>" data-type="<%= report.report_id ? 'report' : 'assignment' %>" data-report-id="<%= report.report_id || '' %>">
+              </td>
+              
+              <!-- Data -->
+              <td><%= report.data ? new Date(report.data + 'T12:00:00').toLocaleDateString('it-IT') : new Date().toLocaleDateString('it-IT') %></td>
+              
+              <!-- Driver -->
+              <td><strong><%= report.nome %> <%= report.cognome %></strong></td>
+              
+              <!-- Status -->
+              <td><%- statoHtml %></td>
+              
+              <!-- Targa -->
+              <td><%= report.targa %></td>
+              
+              <!-- Codice Rotta -->
+              <td><%= report.codice_giro || '--' %></td>
+              
+              <!-- KM Partenza -->
+              <td><%= report.km_partenza ? report.km_partenza.toLocaleString() : '--' %></td>
+              
+              <!-- KM Rientro -->
+              <td>
+                <% if (report.km_arrivo) { %>
+                  <%= report.km_arrivo.toLocaleString() %>
+                <% } else { %>
+                  <span style="color: #94a3b8; font-style: italic;">--</span>
+                <% } %>
+              </td>
+              
+              <!-- KM Percorsi -->
+              <td>
+                <% if (report.km_arrivo && report.km_partenza) { %>
+                  <strong><%= (report.km_arrivo - report.km_partenza) %></strong>
+                <% } else { %>
+                  <span style="color: #94a3b8; font-style: italic;">--</span>
+                <% } %>
+              </td>
+              
+              <!-- Orario Partenza -->
+              <td>
+                <% if (report.ora_partenza) { %>
+                  <%= new Date(report.ora_partenza).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) %>
+                <% } else { %>
+                  <span style="color: #94a3b8; font-style: italic;">--</span>
+                <% } %>
+              </td>
+              
+              <!-- Orario Rientro -->
+              <td>
+                <% if (report.ora_arrivo) { %>
+                  <%= new Date(report.ora_arrivo).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) %>
+                <% } else { %>
+                  <span style="color: #94a3b8; font-style: italic;">--</span>
+                <% } %>
+              </td>
+              
+              <!-- Rifornimento -->
+              <td>
+                <% if (report.metodo_rifornimento) { %>
+                  <div>
+                    <strong style="color: <%= report.metodo_rifornimento === 'DKV' ? '#8b5cf6' : '#0891b2' %>;">
+                      <%= report.metodo_rifornimento %>
+                    </strong>
+                    <% if (report.importo_rifornimento) { %>
+                      <span style="color: #059669; font-size: 0.75em; margin-left: 4px;">€<%= parseFloat(report.importo_rifornimento).toFixed(2) %></span>
+                    <% } %>
+                  </div>
+                <% } else { %>
+                  <span style="color: #94a3b8; font-style: italic;">--</span>
+                <% } %>
+              </td>
+              
+              <!-- Pacchi Resi -->
+              <td>
+                <% if (report.pacchi_resi != null && report.pacchi_resi > 0) { %>
+                  <span style="color: #dc2626; font-weight: 600;"><%= report.pacchi_resi %></span>
+                <% } else if (report.pacchi_resi === 0) { %>
+                  <span style="color: #10b981;">0</span>
+                <% } else { %>
+                  <span style="color: #94a3b8; font-style: italic;">--</span>
+                <% } %>
+              </td>
+              
+              <!-- Foto -->
+              <td>
+                <% if (report.foto_frontale) { %>
+                  <% 
+                    const fotoCount = [
+                      report.foto_frontale, 
+                      report.foto_posteriore, 
+                      report.foto_destra, 
+                      report.foto_sinistra,
+                      report.foto_cruscotto
+                    ].filter(Boolean).length;
+                  %>
+                  <span class="badge badge-info"><i class="fas fa-camera"></i> <%= fotoCount %></span>
+                <% } else { %>
+                  <span style="color: #94a3b8;">--</span>
+                <% } %>
+              </td>
+              
+              <!-- Azioni -->
+              <td>
+                <% if (report.report_id) { %>
+                  <div style="display: flex; gap: 0.5rem;">
+                    <a href="/admin/reports/<%= report.report_id %>" class="btn btn-sm btn-secondary" title="Dettagli">
+                      <i class="fas fa-eye"></i>
+                    </a>
+                  </div>
+                <% } else { %>
+                  <span style="color: #94a3b8; font-style: italic;">--</span>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Pulsante eliminazione multipla -->
+  <% if (recentReports && recentReports.length > 0) { %>
+  <div style="padding: 1rem; border-top: 1px solid #e5e7eb;">
+    <button onclick="deleteSelected()" class="btn btn-danger" id="deleteBtn" style="display: none; font-size: 1rem; padding: 0.75rem 1.5rem;">
+      <i class="fas fa-trash"></i> Elimina Selezionati (<span id="selectedCount">0</span>)
+    </button>
+  </div>
+  <% } %>
+</div>
+
+<!-- Manutenzioni Urgenti -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+  <!-- Tabella Km Finali Furgoni -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">🚗 Km Finali Furgoni per Rotta</h2>
+        <p class="card-subtitle">Ordinati per codice rotta</p>
+      </div>
+      <div style="display: flex; gap: 0.5rem;">
+        <a href="/admin/dashboard/export-km-csv?date=<%= selectedDate %>" class="btn btn-success btn-sm">
+          <i class="fas fa-file-csv"></i> CSV
+        </a>
+        <a href="/admin/dashboard/export-km-excel?date=<%= selectedDate %>" class="btn btn-info btn-sm">
+          <i class="fas fa-file-excel"></i> Excel
+        </a>
+      </div>
+    </div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Rotta</th>
+            <th>Modello</th>
+            <th>Targa</th>
+            <th>Km Finali</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (vehicleKmByRoute.length === 0) { %>
+            <tr><td colspan="4" class="text-center text-secondary">Nessun dato disponibile</td></tr>
+          <% } else { %>
+            <% vehicleKmByRoute.forEach(v => { %>
+              <tr>
+                <td><strong><%= v.rotta %></strong></td>
+                <td><%= v.modello %></td>
+                <td><%= v.targa %></td>
+                <td><%= v.km_finali.toLocaleString('it-IT') %> km</td>
+              </tr>
+            <% }) %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">🔧 Manutenzioni Urgenti</h2>
+        <p class="card-subtitle">Richiedono attenzione immediata</p>
+      </div>
+      <a href="/admin/maintenance" class="btn btn-outline">Vedi Tutte</a>
+    </div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Veicolo</th>
+            <th>Priorità</th>
+            <th>Descrizione</th>
+            <th>Stato</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (urgentMaintenance.length === 0) { %>
+            <tr><td colspan="4" class="text-center text-secondary">Nessuna manutenzione urgente</td></tr>
+          <% } else { %>
+            <% urgentMaintenance.forEach(m => { %>
+              <tr>
+                <td><strong><%= m.targa %></strong></td>
+                <td>
+                  <% if (m.priorita === 'critica') { %>
+                    <span class="badge badge-danger">CRITICA</span>
+                  <% } else if (m.priorita === 'alta') { %>
+                    <span class="badge badge-warning">ALTA</span>
+                  <% } else if (m.priorita === 'media') { %>
+                    <span class="badge badge-info">MEDIA</span>
+                  <% } else { %>
+                    <span class="badge badge-success">BASSA</span>
+                  <% } %>
+                </td>
+                <td><%= m.descrizione.substring(0, 50) %>...</td>
+                <td>
+                  <% if (m.stato === 'in_attesa') { %>
+                    <span class="badge badge-gray">In Attesa</span>
+                  <% } else if (m.stato === 'in_lavorazione') { %>
+                    <span class="badge badge-info">In Lavorazione</span>
+                  <% } else { %>
+                    <span class="badge badge-success">Completata</span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Azioni Rapide -->
+<div class="card mt-3">
+  <div class="card-header">
+    <h2 class="card-title">Azioni Rapide</h2>
+  </div>
+  <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; padding: 1rem;">
+    <a href="/admin/reports" class="btn btn-primary">
+      <i class="fas fa-file-alt"></i> Gestisci Rapporti
+    </a>
+    <a href="/admin/vehicles/new" class="btn btn-success">
+      <i class="fas fa-plus"></i> Aggiungi Veicolo
+    </a>
+    <a href="/admin/employees/new" class="btn btn-secondary">
+      <i class="fas fa-user-plus"></i> Aggiungi Utente
+    </a>
+    <a href="/admin/expiration-alerts" class="btn btn-warning">
+      <i class="fas fa-bell"></i> Controlla Scadenze
+    </a>
+    <a href="/admin/maintenance" class="btn btn-info">
+      <i class="fas fa-wrench"></i> Manutenzioni
+    </a>
+  </div>
+</div>
+
+<script>
+// Funzione per aggiornare il contatore e mostrare/nascondere bottone
+function updateSelectedCount() {
+  const count = document.querySelectorAll('.report-checkbox:checked').length;
+  const countSpan = document.getElementById('selectedCount');
+  const deleteBtn = document.getElementById('deleteBtn');
+  
+  if (countSpan) {
+    countSpan.textContent = count;
+  }
+  
+  if (deleteBtn) {
+    deleteBtn.style.display = count > 0 ? 'inline-flex' : 'none';
+  }
+}
+
+// Checkbox master per selezionare/deselezionare tutti
+const selectAllCheckbox = document.getElementById('selectAll');
+if (selectAllCheckbox) {
+  selectAllCheckbox.addEventListener('change', function() {
+    document.querySelectorAll('.report-checkbox').forEach(cb => {
+      cb.checked = this.checked;
+    });
+    updateSelectedCount();
+  });
+}
+
+// Aggiorna contatore quando si clicca su singoli checkbox
+document.querySelectorAll('.report-checkbox').forEach(cb => {
+  cb.addEventListener('change', function() {
+    updateSelectedCount();
+    // Aggiorna stato checkbox master
+    const total = document.querySelectorAll('.report-checkbox').length;
+    const checked = document.querySelectorAll('.report-checkbox:checked').length;
+    const selectAll = document.getElementById('selectAll');
+    if (selectAll) {
+      selectAll.checked = (checked === total && total > 0);
+      selectAll.indeterminate = (checked > 0 && checked < total);
+    }
+  });
+});
+
+async function deleteSelected() {
+  const selectedCheckboxes = Array.from(document.querySelectorAll('.report-checkbox:checked'));
+  
+  if (selectedCheckboxes.length === 0) {
+    alert('Seleziona almeno un elemento');
+    return;
+  }
+  
+  // Separa report da assegnazioni
+  const reportIds = [];
+  const assignmentIds = [];
+  
+  selectedCheckboxes.forEach(cb => {
+    const reportId = cb.dataset.reportId;
+    const assignmentId = cb.value;
+    
+    if (reportId) {
+      reportIds.push(reportId);
+    } else {
+      assignmentIds.push(assignmentId);
+    }
+  });
+  
+  const totalCount = reportIds.length + assignmentIds.length;
+  if (!confirm(`Vuoi eliminare ${totalCount} elemento/i?\n${reportIds.length > 0 ? `- ${reportIds.length} rapporto/i compilato/i\n` : ''}${assignmentIds.length > 0 ? `- ${assignmentIds.length} assegnazione/i` : ''}`)) {
+    return;
+  }
+  
+  try {
+    // Elimina report se presenti
+    if (reportIds.length > 0) {
+      const response = await fetch('/admin/reports/delete-multiple', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ report_ids: reportIds })
+      });
+      const data = await response.json();
+      if (!data.success) {
+        alert('Errore eliminazione report: ' + data.message);
+        return;
+      }
+    }
+    
+    // Elimina assegnazioni se presenti
+    if (assignmentIds.length > 0) {
+      const response = await fetch('/admin/assignments/delete-multiple', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assignment_ids: assignmentIds })
+      });
+      const data = await response.json();
+      if (!data.success) {
+        alert('Errore eliminazione assegnazioni: ' + data.message);
+        return;
+      }
+    }
+    
+    window.location.reload();
+  } catch (error) {
+    console.error(error);
+    alert('Errore di connessione');
+  }
+}
+</script>

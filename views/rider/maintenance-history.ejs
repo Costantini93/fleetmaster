@@ -1,0 +1,130 @@
+<% const currentPage = 'maintenance-history'; const pageTitle = 'Storico Manutenzioni'; %>
+
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Le Mie Segnalazioni</h2>
+      <p class="card-subtitle">Storico problemi segnalati</p>
+    </div>
+  </div>
+
+  <form method="GET" action="/rider/maintenance-history" class="mb-4">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+      <div class="form-group mb-0">
+        <label class="form-label">Stato</label>
+        <select name="stato" class="form-select">
+          <option value="">Tutti</option>
+          <option value="in_attesa" <%= filters.stato === 'in_attesa' ? 'selected' : '' %>>In Attesa</option>
+          <option value="in_lavorazione" <%= filters.stato === 'in_lavorazione' ? 'selected' : '' %>>In Lavorazione</option>
+          <option value="completata" <%= filters.stato === 'completata' ? 'selected' : '' %>>Completata</option>
+        </select>
+      </div>
+
+      <div class="form-group mb-0">
+        <label class="form-label">Priorità</label>
+        <select name="priorita" class="form-select">
+          <option value="">Tutte</option>
+          <option value="critica" <%= filters.priorita === 'critica' ? 'selected' : '' %>>Critica</option>
+          <option value="alta" <%= filters.priorita === 'alta' ? 'selected' : '' %>>Alta</option>
+          <option value="media" <%= filters.priorita === 'media' ? 'selected' : '' %>>Media</option>
+          <option value="bassa" <%= filters.priorita === 'bassa' ? 'selected' : '' %>>Bassa</option>
+        </select>
+      </div>
+
+      <div style="display: flex; align-items: flex-end; gap: 0.5rem;">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-filter"></i> Filtra
+        </button>
+        <a href="/rider/maintenance-history" class="btn btn-secondary">Reset</a>
+      </div>
+    </div>
+  </form>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Veicolo</th>
+          <th>Problema</th>
+          <th>Priorità</th>
+          <th>Stato</th>
+          <th>Risoluzione</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (requests.length === 0) { %>
+          <tr><td colspan="6" class="text-center text-secondary">Nessuna segnalazione trovata</td></tr>
+        <% } else { %>
+          <% requests.forEach(req => { %>
+            <tr>
+              <td><%= new Date(req.data_richiesta).toLocaleDateString('it-IT') %></td>
+              <td>
+                <strong><%= req.targa %></strong><br>
+                <small class="text-secondary"><%= req.modello %></small>
+              </td>
+              <td>
+                <div style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                  <%= req.descrizione %>
+                </div>
+              </td>
+              <td>
+                <% if (req.priorita === 'critica') { %>
+                  <span class="badge badge-error">Critica</span>
+                <% } else if (req.priorita === 'alta') { %>
+                  <span class="badge badge-warning">Alta</span>
+                <% } else if (req.priorita === 'media') { %>
+                  <span class="badge badge-info">Media</span>
+                <% } else { %>
+                  <span class="badge badge-gray">Bassa</span>
+                <% } %>
+              </td>
+              <td>
+                <% if (req.stato === 'in_attesa') { %>
+                  <span class="badge badge-warning">In Attesa</span>
+                <% } else if (req.stato === 'in_lavorazione') { %>
+                  <span class="badge badge-info">In Lavorazione</span>
+                <% } else { %>
+                  <span class="badge badge-success">Completata</span>
+                <% } %>
+              </td>
+              <td>
+                <% if (req.note_risoluzione) { %>
+                  <div style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" 
+                       title="<%= req.note_risoluzione %>">
+                    <%= req.note_risoluzione %>
+                  </div>
+                <% } else { %>
+                  <span class="text-secondary">-</span>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <% if (requests.length > 0) { %>
+    <div class="mt-4">
+      <div class="text-center text-secondary mb-2">Totale segnalazioni: <%= requests.length %></div>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; max-width: 800px; margin: 0 auto;">
+        <div class="text-center p-3" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border-radius: 10px;">
+          <div style="font-size: 2rem; font-weight: 700;"><%= stats.in_attesa %></div>
+          <div style="font-size: 0.9rem; opacity: 0.9;">In Attesa</div>
+        </div>
+        
+        <div class="text-center p-3" style="background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; border-radius: 10px;">
+          <div style="font-size: 2rem; font-weight: 700;"><%= stats.in_lavorazione %></div>
+          <div style="font-size: 0.9rem; opacity: 0.9;">In Lavorazione</div>
+        </div>
+        
+        <div class="text-center p-3" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border-radius: 10px;">
+          <div style="font-size: 2rem; font-weight: 700;"><%= stats.completata %></div>
+          <div style="font-size: 0.9rem; opacity: 0.9;">Completate</div>
+        </div>
+      </div>
+    </div>
+  <% } %>
+</div>

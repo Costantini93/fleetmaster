@@ -1,0 +1,98 @@
+<% const currentPage = 'maintenance'; const pageTitle = 'Dettaglio Manutenzione'; %>
+
+<div class="card" style="max-width: 900px; margin: 0 auto;">
+  <div class="card-header">
+    <h2 class="card-title">Richiesta Manutenzione #<%= request.id %></h2>
+    <a href="/admin/maintenance" class="btn btn-outline">
+      <i class="fas fa-arrow-left"></i> Indietro
+    </a>
+  </div>
+
+  <div class="mb-4" style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px;">
+    <h3 class="font-bold mb-3">Informazioni Generali</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+      <div><strong>Veicolo:</strong> <%= request.targa %> - <%= request.modello %> (<%= request.anno %>)</div>
+      <div><strong>Autista:</strong> <%= request.nome %> <%= request.cognome %></div>
+      <div><strong>Data Richiesta:</strong> <%= new Date(request.data_richiesta).toLocaleString('it-IT') %></div>
+      <div>
+        <strong>Priorità:</strong>
+        <% if (request.priorita === 'critica') { %>
+          <span class="badge badge-error">Critica</span>
+        <% } else if (request.priorita === 'alta') { %>
+          <span class="badge badge-warning">Alta</span>
+        <% } else if (request.priorita === 'media') { %>
+          <span class="badge badge-info">Media</span>
+        <% } else { %>
+          <span class="badge badge-gray">Bassa</span>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-4">
+    <h3 class="font-bold mb-2">Descrizione Problema</h3>
+    <p style="background: white; padding: 1rem; border-radius: 8px; border: 2px solid var(--gray-200);"><%= request.descrizione %></p>
+  </div>
+
+  <!-- Azione Rapida: Sostituisci Veicolo -->
+  <% if (request.stato !== 'completata' && todayAssignment) { %>
+  <div class="mb-4" style="background: #fffbeb; padding: 1.5rem; border-radius: 12px; border-left: 4px solid #f59e0b;">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+      <div>
+        <h3 class="font-bold" style="color: #92400e; margin-bottom: 0.5rem;">
+          <i class="fas fa-exchange-alt"></i> Veicolo in Riparazione?
+        </h3>
+        <p style="color: #78350f; margin: 0;">
+          Se il veicolo non può essere utilizzato, puoi sostituirlo immediatamente con uno disponibile.
+        </p>
+      </div>
+      <a href="/admin/substitutions?vehicle_id=<%= request.vehicle_id %>&assignment_id=<%= todayAssignment.id %>" 
+         class="btn btn-warning" style="white-space: nowrap;">
+        <i class="fas fa-exchange-alt"></i> Sostituisci Veicolo
+      </a>
+    </div>
+  </div>
+  <% } %>
+
+  <% if (request.note_risoluzione) { %>
+  <div class="mb-4">
+    <h3 class="font-bold mb-2">Note di Risoluzione</h3>
+    <p style="background: var(--gray-50); padding: 1rem; border-radius: 8px;"><%= request.note_risoluzione %></p>
+    <% if (request.data_risoluzione) { %>
+      <p class="text-sm text-secondary mt-2">Risolto il: <%= new Date(request.data_risoluzione).toLocaleString('it-IT') %></p>
+    <% } %>
+  </div>
+  <% } %>
+
+  <form action="/admin/maintenance/<%= request.id %>/update-status" method="POST">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+      <div class="form-group">
+        <label class="form-label">Stato</label>
+        <select name="stato" class="form-select" required>
+          <option value="in_attesa" <%= request.stato === 'in_attesa' ? 'selected' : '' %>>In Attesa</option>
+          <option value="in_lavorazione" <%= request.stato === 'in_lavorazione' ? 'selected' : '' %>>In Lavorazione</option>
+          <option value="completata" <%= request.stato === 'completata' ? 'selected' : '' %>>Completata</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Priorità</label>
+        <select name="priorita" class="form-select" required>
+          <option value="bassa" <%= request.priorita === 'bassa' ? 'selected' : '' %>>Bassa</option>
+          <option value="media" <%= request.priorita === 'media' ? 'selected' : '' %>>Media</option>
+          <option value="alta" <%= request.priorita === 'alta' ? 'selected' : '' %>>Alta</option>
+          <option value="critica" <%= request.priorita === 'critica' ? 'selected' : '' %>>Critica</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Note di Risoluzione</label>
+      <textarea name="note_risoluzione" class="form-textarea" rows="4"><%= request.note_risoluzione || '' %></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+      <i class="fas fa-save"></i> Aggiorna Richiesta
+    </button>
+  </form>
+</div>

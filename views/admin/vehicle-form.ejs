@@ -1,0 +1,55 @@
+<% const currentPage = 'vehicles'; const pageTitle = action === 'create' ? 'Nuovo Veicolo' : 'Modifica Veicolo'; %>
+
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+  <div class="card-header">
+    <h2 class="card-title"><%= action === 'create' ? 'Aggiungi Nuovo Veicolo' : 'Modifica Veicolo' %></h2>
+  </div>
+
+  <form action="<%= action === 'create' ? '/admin/vehicles/new' : '/admin/vehicles/edit/' + vehicle.id %>" method="POST">
+    <div class="form-group">
+      <label class="form-label">Targa *</label>
+      <input type="text" name="targa" class="form-input" value="<%= vehicle ? vehicle.targa : '' %>" required style="text-transform: uppercase;">
+      <p class="form-help">Deve essere univoca nel sistema</p>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Modello *</label>
+      <input type="text" name="modello" class="form-input" value="<%= vehicle ? vehicle.modello : '' %>" required>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Anno *</label>
+      <input type="number" name="anno" class="form-input" value="<%= vehicle ? vehicle.anno : new Date().getFullYear() %>" required min="1990" max="<%= new Date().getFullYear() + 1 %>">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Km Attuali</label>
+      <input type="number" name="km_attuali" class="form-input" value="<%= vehicle ? vehicle.km_attuali : 0 %>" min="0">
+      <p class="form-help">Verrà aggiornato automaticamente dai rapporti giornalieri</p>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Note Manutenzione</label>
+      <textarea name="note_manutenzione" class="form-textarea" rows="4"><%= vehicle ? vehicle.note_manutenzione || '' : '' %></textarea>
+    </div>
+
+    <% if (action === 'edit') { %>
+    <div class="form-group">
+      <label class="form-label">Stato</label>
+      <select name="attivo" class="form-select">
+        <option value="1" <%= vehicle && vehicle.attivo === 1 ? 'selected' : '' %>>Attivo</option>
+        <option value="0" <%= vehicle && vehicle.attivo === 0 ? 'selected' : '' %>>Disattivato</option>
+      </select>
+    </div>
+    <% } %>
+
+    <div class="flex gap-2">
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-save"></i> Salva
+      </button>
+      <a href="/admin/vehicles" class="btn btn-outline">
+        <i class="fas fa-times"></i> Annulla
+      </a>
+    </div>
+  </form>
+</div>

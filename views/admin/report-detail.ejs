@@ -1,0 +1,167 @@
+<% const currentPage = 'reports'; const pageTitle = 'Dettaglio Rapporto'; %>
+
+<div class="card" style="max-width: 1000px; margin: 0 auto;">
+  <div class="card-header">
+    <h2 class="card-title">Rapporto #<%= report.id %></h2>
+    <a href="/admin/reports" class="btn btn-outline">
+      <i class="fas fa-arrow-left"></i> Indietro
+    </a>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+    <!-- Info Autista e Veicolo -->
+    <div>
+      <h3 class="text-lg font-bold mb-3">Informazioni Generali</h3>
+      <div class="mb-2"><strong>Data:</strong> <%= new Date(report.data).toLocaleDateString('it-IT') %></div>
+      <div class="mb-2"><strong>Autista:</strong> <%= report.nome %> <%= report.cognome %></div>
+      <div class="mb-2"><strong>Telefono:</strong> <%= report.telefono || '-' %></div>
+      <div class="mb-2"><strong>Veicolo:</strong> <%= report.targa %> - <%= report.modello %> (<%= report.anno %>)</div>
+      <% if (substitution) { %>
+        <div style="background: #fffbeb; padding: 0.75rem; border-radius: 8px; border-left: 4px solid #f59e0b; margin-top: 1rem;">
+          <div style="color: #92400e; font-weight: bold; margin-bottom: 0.5rem;">
+            <i class="fas fa-exchange-alt"></i> Sostituzione Veicolo
+          </div>
+          <div style="font-size: 0.875rem;">
+            <div class="mb-1"><strong>Veicolo Sostituito:</strong> <%= substitution.veicolo_originale_targa %></div>
+            <div class="mb-1"><strong>Motivo:</strong> 
+              <% if (substitution.motivo === 'guasto') { %>
+                <span class="badge badge-error">Guasto</span>
+              <% } else if (substitution.motivo === 'manutenzione') { %>
+                <span class="badge badge-info">Manutenzione</span>
+              <% } else if (substitution.motivo === 'incidente') { %>
+                <span class="badge badge-warning">Incidente</span>
+              <% } else { %>
+                <span class="badge badge-gray">Altro</span>
+              <% } %>
+            </div>
+            <% if (substitution.note) { %>
+              <div class="mb-1"><strong>Note:</strong> <%= substitution.note %></div>
+            <% } %>
+          </div>
+        </div>
+      <% } %>
+      <div class="mb-2"><strong>Codice Giro:</strong> <%= report.codice_giro || '-' %></div>
+      <div class="mb-2">
+        <strong>Stato:</strong>
+        <% if (report.stato === 'completato') { %>
+          <span class="badge badge-success">Completato</span>
+        <% } else if (report.stato === 'partito') { %>
+          <span class="badge badge-info">In Corso</span>
+        <% } else { %>
+          <span class="badge badge-gray">Preparazione</span>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Dati Partenza -->
+    <div>
+      <h3 class="text-lg font-bold mb-3">Dati Partenza</h3>
+      <div class="mb-2"><strong>Ora Partenza:</strong> <%= report.ora_partenza ? new Date(report.ora_partenza).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '-' %></div>
+      <div class="mb-2"><strong>Km Partenza:</strong> <%= report.km_partenza %> km</div>
+      <div class="mb-2"><strong>Numero Ditta:</strong> <%= report.numero_ditta || '-' %></div>
+      <div class="mb-2"><strong>Pacchi Ritirati:</strong> <%= report.pacchi_ritirati %></div>
+    </div>
+
+    <!-- Dati Ritorno -->
+    <div>
+      <h3 class="text-lg font-bold mb-3">Dati Ritorno</h3>
+      <% if (report.stato === 'completato') { %>
+        <div class="mb-2"><strong>Ora Rientro:</strong> <%= report.ora_arrivo ? new Date(report.ora_arrivo).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '-' %></div>
+        <div class="mb-2"><strong>Km Arrivo:</strong> <%= report.km_arrivo %> km</div>
+        <div class="mb-2"><strong>Distanza:</strong> <%= report.distanza_percorsa %> km</div>
+        <div class="mb-2">
+          <strong>Rifornimento:</strong>
+          <% if (report.metodo_rifornimento && report.metodo_rifornimento !== 'Nessuno') { %>
+            <span style="color: <%= report.metodo_rifornimento === 'DKV' ? '#8b5cf6' : '#0891b2' %>; font-weight: 600;"><%= report.metodo_rifornimento %></span>
+            <% if (report.importo_rifornimento) { %>
+              - <span style="color: #059669; font-weight: 600;">€<%= parseFloat(report.importo_rifornimento).toFixed(2) %></span>
+            <% } %>
+            <% if (report.numero_tessera_dkv) { %>
+              <br><small style="color: #6b7280;">Tessera: <%= report.numero_tessera_dkv %></small>
+            <% } %>
+          <% } else { %>
+            <span style="color: #6b7280;">Nessuno</span>
+          <% } %>
+        </div>
+      <% } else { %>
+        <div class="text-secondary">Rapporto non ancora completato</div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Foto Veicolo -->
+  <% if (report.foto_frontale || report.foto_posteriore || report.foto_destra || report.foto_sinistra || report.foto_cruscotto) { %>
+  <div class="mt-4">
+    <h3 class="text-lg font-bold mb-3">Foto Veicolo</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+      <% if (report.foto_frontale) { %>
+        <div>
+          <p class="font-semibold mb-2">Frontale</p>
+          <img src="/uploads/vehicle-photos/<%= report.foto_frontale %>" alt="Foto Frontale" style="width: 100%; border-radius: 8px; cursor: pointer;" onclick="window.open(this.src)">
+        </div>
+      <% } %>
+      <% if (report.foto_posteriore) { %>
+        <div>
+          <p class="font-semibold mb-2">Posteriore</p>
+          <img src="/uploads/vehicle-photos/<%= report.foto_posteriore %>" alt="Foto Posteriore" style="width: 100%; border-radius: 8px; cursor: pointer;" onclick="window.open(this.src)">
+        </div>
+      <% } %>
+      <% if (report.foto_destra) { %>
+        <div>
+          <p class="font-semibold mb-2">Destra</p>
+          <img src="/uploads/vehicle-photos/<%= report.foto_destra %>" alt="Foto Destra" style="width: 100%; border-radius: 8px; cursor: pointer;" onclick="window.open(this.src)">
+        </div>
+      <% } %>
+      <% if (report.foto_sinistra) { %>
+        <div>
+          <p class="font-semibold mb-2">Sinistra</p>
+          <img src="/uploads/vehicle-photos/<%= report.foto_sinistra %>" alt="Foto Sinistra" style="width: 100%; border-radius: 8px; cursor: pointer;" onclick="window.open(this.src)">
+        </div>
+      <% } %>
+      <% if (report.foto_cruscotto) { %>
+        <div>
+          <p class="font-semibold mb-2">Cruscotto</p>
+          <img src="/uploads/vehicle-photos/<%= report.foto_cruscotto %>" alt="Foto Cruscotto" style="width: 100%; border-radius: 8px; cursor: pointer;" onclick="window.open(this.src)">
+        </div>
+      <% } %>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- Firma -->
+  <% if (report.firma_partenza || report.firma) { %>
+  <div class="mt-4">
+    <h3 class="text-lg font-bold mb-3">Firma Digitale</h3>
+    <div style="display: inline-block; border: 2px solid #e5e7eb; border-radius: 8px; padding: 1rem; background: white;">
+      <img src="<%= report.firma_partenza || report.firma %>" alt="Firma" style="max-width: 500px; display: block;">
+    </div>
+  </div>
+  <% } %>
+
+  <div class="mt-4 flex gap-2">
+    <button onclick="window.print()" class="btn btn-secondary">
+      <i class="fas fa-print"></i> Stampa
+    </button>
+    <button onclick="deleteReport()" class="btn btn-danger">
+      <i class="fas fa-trash"></i> Elimina
+    </button>
+  </div>
+</div>
+
+<script>
+async function deleteReport() {
+  if (!confirm('Sei sicuro di voler eliminare questo rapporto?')) return;
+  
+  try {
+    const response = await fetch('/admin/reports/<%= report.id %>/delete', { method: 'POST' });
+    const data = await response.json();
+    if (data.success) {
+      window.location.href = '/admin/reports';
+    } else {
+      alert(data.message);
+    }
+  } catch (error) {
+    alert('Errore di connessione');
+  }
+}
+</script>

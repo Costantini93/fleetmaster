@@ -1,0 +1,142 @@
+<% const currentPage = 'vehicles'; const pageTitle = 'Scadenzario Manutenzioni - ' + vehicle.targa; %>
+
+<div class="card" style="max-width: 1200px; margin: 0 auto;">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Scadenzario Manutenzioni - <%= vehicle.targa %></h2>
+      <p class="card-subtitle"><%= vehicle.modello %> (<%= vehicle.anno %>)</p>
+    </div>
+    <a href="/admin/vehicles" class="btn btn-outline">
+      <i class="fas fa-arrow-left"></i> Indietro
+    </a>
+  </div>
+
+  <!-- Form nuovo scadenzario -->
+  <div class="mb-4" style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px;">
+    <h3 class="font-bold mb-3">Aggiungi Scadenza Manutenzione</h3>
+    <form action="/admin/vehicles/<%= vehicle.id %>/maintenance-schedule" method="POST">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label">Tipo Manutenzione *</label>
+          <select name="tipo_manutenzione" class="form-select" required>
+            <option value="">Seleziona</option>
+            <option value="Tagliando">Tagliando</option>
+            <option value="Cambio Olio">Cambio Olio</option>
+            <option value="Filtri">Filtri</option>
+            <option value="Freni">Freni</option>
+            <option value="Gomme">Gomme</option>
+            <option value="Revisione">Revisione</option>
+            <option value="Altro">Altro</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">KM Previsti *</label>
+          <input type="number" name="km_previsti" class="form-input" required placeholder="es. 10000">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Ultima Manutenzione KM</label>
+          <input type="number" name="ultima_manutenzione_km" class="form-input" value="<%= vehicle.km_attuali %>">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Note</label>
+          <input type="text" name="note" class="form-input" placeholder="Note aggiuntive">
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary mt-3">
+        <i class="fas fa-plus"></i> Aggiungi Scadenza
+      </button>
+    </form>
+  </div>
+
+  <!-- Tabella scadenze -->
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Tipo Manutenzione</th>
+          <th>KM Previsti</th>
+          <th>Ultima Manutenzione</th>
+          <th>Prossima Manutenzione</th>
+          <th>KM Rimanenti</th>
+          <th>Note</th>
+          <th>Azioni</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (schedules.length === 0) { %>
+          <tr><td colspan="7" class="text-center text-secondary">Nessuna scadenza programmata</td></tr>
+        <% } else { %>
+          <% schedules.forEach(schedule => { %>
+            <% const remaining = schedule.prossima_manutenzione_km - vehicle.km_attuali; %>
+            <tr>
+              <td><strong><%= schedule.tipo_manutenzione %></strong></td>
+              <td><%= schedule.km_previsti.toLocaleString() %> km</td>
+              <td><%= schedule.ultima_manutenzione_km.toLocaleString() %> km</td>
+              <td><%= schedule.prossima_manutenzione_km.toLocaleString() %> km</td>
+              <td>
+                <% if (remaining <= 0) { %>
+                  <span class="badge badge-danger">SCADUTA!</span>
+                <% } else if (remaining <= 200) { %>
+                  <span class="badge badge-warning"><%= remaining %> km</span>
+                <% } else { %>
+                  <span class="badge badge-success"><%= remaining %> km</span>
+                <% } %>
+              </td>
+              <td><%= schedule.note || '-' %></td>
+              <td>
+                <button onclick="updateSchedule(<%= schedule.id %>)" class="btn-icon" title="Aggiorna">
+                  <i class="fas fa-sync"></i>
+                </button>
+                <button onclick="deleteSchedule(<%= schedule.id %>)" class="btn-icon" title="Elimina">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+async function updateSchedule(id) {
+  const km = prompt('Inserisci i nuovi KM dell\'ultima manutenzione:');
+  if (!km) return;
+  
+  try {
+    const response = await fetch(`/admin/maintenance-schedule/${id}/update`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ultima_manutenzione_km: km })
+    });
+    const data = await response.json();
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert(data.message);
+    }
+  } catch (error) {
+    alert('Errore di connessione');
+  }
+}
+
+async function deleteSchedule(id) {
+  if (!confirm('Vuoi eliminare questa scadenza?')) return;
+  
+  try {
+    const response = await fetch(`/admin/maintenance-schedule/${id}/delete`, { method: 'POST' });
+    const data = await response.json();
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert(data.message);
+    }
+  } catch (error) {
+    alert('Errore di connessione');
+  }
+}
+</script>

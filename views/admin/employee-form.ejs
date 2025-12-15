@@ -1,0 +1,65 @@
+<% const currentPage = 'employees'; const pageTitle = action === 'create' ? 'Nuovo Utente' : 'Modifica Utente'; %>
+
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+  <div class="card-header">
+    <h2 class="card-title"><%= action === 'create' ? 'Crea Nuovo Utente' : 'Modifica Utente' %></h2>
+  </div>
+
+  <form action="<%= action === 'create' ? '/admin/employees/new' : '/admin/employees/edit/' + employee.id %>" method="POST">
+    <div class="form-group">
+      <label class="form-label">Nome *</label>
+      <input type="text" name="nome" class="form-input" value="<%= employee ? employee.nome : ((typeof formData !== 'undefined' && formData.nome) ? formData.nome : '') %>" required>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Cognome *</label>
+      <input type="text" name="cognome" class="form-input" value="<%= employee ? employee.cognome : ((typeof formData !== 'undefined' && formData.cognome) ? formData.cognome : '') %>" required>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Username *</label>
+      <input type="text" name="username" class="form-input" value="<%= employee ? employee.username : ((typeof formData !== 'undefined' && formData.username) ? formData.username : '') %>" required>
+      <p class="form-help">Deve essere univoco nel sistema</p>
+    </div>
+
+    <% if (action === 'create') { %>
+    <div class="form-group">
+      <label class="form-label">Password *</label>
+      <input type="password" name="password" class="form-input" required minlength="6">
+      <p class="form-help">Minimo 6 caratteri</p>
+    </div>
+    <% } %>
+
+    <div class="form-group">
+      <label class="form-label">Telefono</label>
+      <input type="tel" name="telefono" class="form-input" value="<%= employee ? (employee.telefono || '') : ((typeof formData !== 'undefined' && formData.telefono) ? formData.telefono : '') %>">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Ruolo *</label>
+      <select name="ruolo" class="form-select" required>
+        <option value="rider" <%= (employee && employee.ruolo === 'rider') || (typeof formData !== 'undefined' && formData.ruolo === 'rider') ? 'selected' : '' %>>Rider (Autista)</option>
+        <option value="admin" <%= (employee && employee.ruolo === 'admin') || (typeof formData !== 'undefined' && formData.ruolo === 'admin') ? 'selected' : '' %>>Admin (Amministratore)</option>
+      </select>
+    </div>
+
+    <% if (action === 'edit') { %>
+    <div class="form-group">
+      <label class="form-label">Stato</label>
+      <select name="attivo" class="form-select">
+        <option value="1" <%= employee && employee.attivo === 1 ? 'selected' : '' %>>Attivo</option>
+        <option value="0" <%= employee && employee.attivo === 0 ? 'selected' : '' %>>Disattivato</option>
+      </select>
+    </div>
+    <% } %>
+
+    <div class="flex gap-2">
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-save"></i> Salva
+      </button>
+      <a href="/admin/employees" class="btn btn-outline">
+        <i class="fas fa-times"></i> Annulla
+      </a>
+    </div>
+  </form>
+</div>

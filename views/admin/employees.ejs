@@ -1,0 +1,109 @@
+<% const currentPage = 'employees'; const pageTitle = 'Gestione Driver'; %>
+
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Lista Driver</h2>
+      <p class="card-subtitle">Gestisci tutti i driver dell'azienda</p>
+    </div>
+    <a href="/admin/employees/new" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Nuovo Utente
+    </a>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Nome Completo</th>
+          <th>Username</th>
+          <th>Telefono</th>
+          <th>Ruolo</th>
+          <th>Stato</th>
+          <th>Data Creazione</th>
+          <th>Azioni</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (employees.length === 0) { %>
+          <tr>
+            <td colspan="7" class="text-center text-secondary">Nessun dipendente trovato</td>
+          </tr>
+        <% } else { %>
+          <% employees.forEach(employee => { %>
+            <tr>
+              <td class="font-semibold"><%= employee.nome %> <%= employee.cognome %></td>
+              <td><%= employee.username %></td>
+              <td><%= employee.telefono || '-' %></td>
+              <td>
+                <% if (employee.ruolo === 'admin') { %>
+                  <span class="badge badge-info">Admin</span>
+                <% } else { %>
+                  <span class="badge badge-secondary">Rider</span>
+                <% } %>
+              </td>
+              <td>
+                <% if (employee.attivo === 1) { %>
+                  <span class="badge badge-success">Attivo</span>
+                <% } else { %>
+                  <span class="badge badge-gray">Disattivato</span>
+                <% } %>
+              </td>
+              <td><%= new Date(employee.data_creazione).toLocaleDateString('it-IT') %></td>
+              <td>
+                <div class="flex gap-1">
+                  <a href="/admin/employees/edit/<%= employee.id %>" class="btn-icon" title="Modifica">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  <button onclick="toggleEmployee(<%= employee.id %>, <%= employee.attivo %>)" class="btn-icon" title="<%= employee.attivo ? 'Disattiva' : 'Attiva' %>">
+                    <i class="fas fa-<%= employee.attivo ? 'ban' : 'check' %>"></i>
+                  </button>
+                  <button onclick="resetPassword(<%= employee.id %>)" class="btn-icon" title="Reset Password">
+                    <i class="fas fa-key"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+async function toggleEmployee(id, currentStatus) {
+  const action = currentStatus === 1 ? 'disattivare' : 'attivare';
+  if (!confirm(`Sei sicuro di voler ${action} questo dipendente?`)) return;
+
+  try {
+    const response = await fetch(`/admin/employees/toggle/${id}`, { method: 'POST' });
+    const data = await response.json();
+    
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert(data.message || 'Errore durante l\'operazione');
+    }
+  } catch (error) {
+    alert('Errore di connessione');
+  }
+}
+
+async function resetPassword(id) {
+  if (!confirm('Vuoi reimpostare la password di questo dipendente?')) return;
+
+  try {
+    const response = await fetch(`/admin/employees/reset-password/${id}`, { method: 'POST' });
+    const data = await response.json();
+    
+    if (data.success) {
+      alert(`Password temporanea: ${data.tempPassword}\n\nComunica questa password all'utente.`);
+    } else {
+      alert(data.message || 'Errore durante il reset');
+    }
+  } catch (error) {
+    alert('Errore di connessione');
+  }
+}
+</script>

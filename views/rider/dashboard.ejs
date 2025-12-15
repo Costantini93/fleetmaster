@@ -1,0 +1,75 @@
+<% const currentPage = 'dashboard'; const pageTitle = 'Dashboard Rider'; %>
+
+<!-- Assegnazione Oggi -->
+<% if (todayAssignment) { %>
+  <!-- Alert Sostituzione Veicolo -->
+  <% if (pendingSubstitution) { %>
+  <div class="card" style="border-left: 4px solid #f59e0b; background: #fffbeb;">
+    <div class="card-header" style="background: transparent;">
+      <div>
+        <h2 class="card-title" style="color: #f59e0b;">
+          <i class="fas fa-exclamation-triangle"></i> Sostituzione Veicolo
+        </h2>
+        <p style="color: #92400e; margin-top: 0.5rem;">Il tuo veicolo è stato sostituito. Devi compilare il modulo di sostituzione.</p>
+      </div>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; padding: 1rem;">
+      <div style="background: white; padding: 1rem; border-radius: 8px;">
+        <div style="color: #dc2626; font-weight: bold; margin-bottom: 0.5rem;">
+          <i class="fas fa-times-circle"></i> Veicolo Sostituito
+        </div>
+        <div><strong>Targa:</strong> <%= pendingSubstitution.vecchia_targa %></div>
+        <div><strong>Modello:</strong> <%= pendingSubstitution.vecchio_modello %></div>
+      </div>
+      <div style="background: white; padding: 1rem; border-radius: 8px;">
+        <div style="color: #059669; font-weight: bold; margin-bottom: 0.5rem;">
+          <i class="fas fa-check-circle"></i> Nuovo Veicolo
+        </div>
+        <div><strong>Targa:</strong> <%= pendingSubstitution.nuova_targa %></div>
+        <div><strong>Modello:</strong> <%= pendingSubstitution.nuovo_modello %></div>
+      </div>
+    </div>
+    <div style="padding: 0 1rem 1rem 1rem;">
+      <a href="/rider/reports/substitution" class="btn btn-warning w-full">
+        <i class="fas fa-exchange-alt"></i> Compila Modulo Sostituzione
+      </a>
+    </div>
+  </div>
+  <% } %>
+
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title">Il Tuo Veicolo Oggi</h2>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+    <div>
+      <div class="mb-2"><strong>Veicolo:</strong> <%= todayAssignment.targa %></div>
+      <div class="mb-2"><strong>Modello:</strong> <%= todayAssignment.modello %></div>
+      <div class="mb-2"><strong>Km Attuali:</strong> <%= todayAssignment.km_attuali.toLocaleString('it-IT') %> km</div>
+    </div>
+    <div class="flex items-center">
+      <% if (pendingSubstitution) { %>
+        <!-- Mostra solo se ha sostituzione -->
+        <span class="badge badge-warning">Sostituzione in Attesa</span>
+      <% } else if (!todayReport) { %>
+        <a href="/rider/reports/new" class="btn btn-primary w-full">
+          <i class="fas fa-plus-circle"></i> Compila Rapporto
+        </a>
+      <% } else if (todayReport.stato === 'partito') { %>
+        <a href="/rider/reports/<%= todayReport.id %>/return" class="btn btn-success w-full">
+          <i class="fas fa-flag-checkered"></i> Completa Viaggio
+        </a>
+      <% } else { %>
+        <span class="badge badge-success">Rapporto Completato</span>
+      <% } %>
+    </div>
+  </div>
+</div>
+<% } else { %>
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title">Nessun Veicolo Assegnato Oggi</h2>
+  </div>
+  <p class="text-secondary">Non hai un veicolo assegnato per oggi. Contatta l'amministratore.</p>
+</div>
+<% } %>

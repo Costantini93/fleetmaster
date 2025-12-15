@@ -1,0 +1,169 @@
+<% const currentPage = 'logs'; const pageTitle = 'Log Attività'; %>
+
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Log Attività Sistema</h2>
+      <p class="card-subtitle">Audit trail completo delle azioni utente</p>
+    </div>
+  </div>
+
+  <form method="GET" action="/admin/activity-logs" class="mb-4">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+      <div class="form-group mb-0">
+        <label class="form-label">Utente</label>
+        <select name="user_id" class="form-select">
+          <option value="">Tutti</option>
+          <% users.forEach(user => { %>
+            <option value="<%= user.id %>" <%= filters.userId == user.id ? 'selected' : '' %>>
+              <%= user.nome %> <%= user.cognome %> (<%= user.ruolo %>)
+            </option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="form-group mb-0">
+        <label class="form-label">Tipo Azione</label>
+        <select name="action" class="form-select">
+          <option value="">Tutte</option>
+          <% actions.forEach(action => { %>
+            <option value="<%= action.azione %>" <%= filters.action === action.azione ? 'selected' : '' %>>
+              <%= action.azione %> (<%= action.count %>)
+            </option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="form-group mb-0">
+        <label class="form-label">Limite Risultati</label>
+        <select name="limit" class="form-select">
+          <option value="50" <%= filters.limit == 50 ? 'selected' : '' %>>50</option>
+          <option value="100" <%= filters.limit == 100 ? 'selected' : '' %>>100</option>
+          <option value="200" <%= filters.limit == 200 ? 'selected' : '' %>>200</option>
+          <option value="500" <%= filters.limit == 500 ? 'selected' : '' %>>500</option>
+        </select>
+      </div>
+
+      <div style="display: flex; align-items: flex-end; gap: 0.5rem;">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-filter"></i> Filtra
+        </button>
+        <a href="/admin/activity-logs" class="btn btn-secondary">Reset</a>
+      </div>
+    </div>
+  </form>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Data/Ora</th>
+          <th>Utente</th>
+          <th>Azione</th>
+          <th>Dettagli</th>
+          <th>IP</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (logs.length === 0) { %>
+          <tr><td colspan="5" class="text-center text-secondary">Nessun log trovato</td></tr>
+        <% } else { %>
+          <% logs.forEach(log => { %>
+            <tr>
+              <td style="white-space: nowrap;">
+                <%= new Date(log.timestamp).toLocaleString('it-IT', { 
+                  day: '2-digit', 
+                  month: '2-digit', 
+                  year: 'numeric',
+                  hour: '2-digit', 
+                  minute: '2-digit',
+                  second: '2-digit'
+                }) %>
+              </td>
+              <td>
+                <strong><%= log.nome %> <%= log.cognome %></strong><br>
+                <small class="text-secondary"><%= log.username %></small>
+                <% if (log.ruolo === 'admin') { %>
+                  <span class="badge badge-error" style="font-size: 0.7rem;">Admin</span>
+                <% } else { %>
+                  <span class="badge badge-info" style="font-size: 0.7rem;">Rider</span>
+                <% } %>
+              </td>
+              <td>
+                <% 
+                  let actionBadgeClass = 'badge-gray';
+                  if (log.azione.includes('login')) actionBadgeClass = 'badge-success';
+                  else if (log.azione.includes('logout')) actionBadgeClass = 'badge-secondary';
+                  else if (log.azione.includes('creazione')) actionBadgeClass = 'badge-primary';
+                  else if (log.azione.includes('modifica')) actionBadgeClass = 'badge-warning';
+                  else if (log.azione.includes('eliminazione')) actionBadgeClass = 'badge-error';
+                %>
+                <span class="badge <%= actionBadgeClass %>"><%= log.azione %></span>
+              </td>
+              <td>
+                <% if (log.dettagli) { %>
+                  <div style="max-width: 350px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" 
+                       title="<%= log.dettagli %>">
+                    <%= log.dettagli %>
+                  </div>
+                <% } else { %>
+                  <span class="text-secondary">-</span>
+                <% } %>
+              </td>
+              <td>
+                <code style="font-size: 0.85rem; color: #64748b;"><%= log.ip_address || '-' %></code>
+                <% if (log.user_agent) { %>
+                  <br><small class="text-secondary" style="font-size: 0.75rem;" title="<%= log.user_agent %>">
+                    <%= log.user_agent.substring(0, 40) %>...
+                  </small>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <% if (logs.length > 0) { %>
+    <div class="mt-4">
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #f8fafc; border-radius: 10px;">
+        <div class="text-secondary">
+          Visualizzati <strong><%= logs.length %></strong> log
+          <% if (filters.userId || filters.action) { %>(filtrati)<% } %>
+        </div>
+        <div style="display: flex; gap: 1rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="badge badge-success">Login</span>
+            <span class="badge badge-primary">Creazione</span>
+            <span class="badge badge-warning">Modifica</span>
+            <span class="badge badge-error">Eliminazione</span>
+            <span class="badge badge-secondary">Logout</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% } %>
+
+  <% if (logs.length >= filters.limit) { %>
+    <div class="mt-3 text-center">
+      <div class="alert alert-info" style="display: inline-block;">
+        <i class="fas fa-info-circle"></i> 
+        Limite di <%= filters.limit %> risultati raggiunto. Aumenta il limite o usa i filtri per vedere più log.
+      </div>
+    </div>
+  <% } %>
+</div>
+
+<style>
+.alert {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+.alert-info {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #1e40af;
+  border: 1px solid #93c5fd;
+}
+</style>

@@ -1,0 +1,102 @@
+<% const currentPage = 'vehicles'; const pageTitle = 'Gestione Veicoli'; %>
+
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Lista Veicoli</h2>
+      <p class="card-subtitle">Gestisci tutti i veicoli della flotta</p>
+    </div>
+    <a href="/admin/vehicles/new" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Nuovo Veicolo
+    </a>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Targa</th>
+          <th>Modello</th>
+          <th>Anno</th>
+          <th>Km Attuali</th>
+          <th>Contratti</th>
+          <th>Manutenzioni</th>
+          <th>Stato</th>
+          <th>Azioni</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (vehicles.length === 0) { %>
+          <tr>
+            <td colspan="8" class="text-center text-secondary">Nessun veicolo trovato</td>
+          </tr>
+        <% } else { %>
+          <% vehicles.forEach(vehicle => { %>
+            <tr>
+              <td class="font-bold"><%= vehicle.targa %></td>
+              <td><%= vehicle.modello %></td>
+              <td><%= vehicle.anno %></td>
+              <td><%= vehicle.km_attuali.toLocaleString('it-IT') %> km</td>
+              <td class="text-center">
+                <a href="/admin/vehicles/<%= vehicle.id %>/contracts" class="badge badge-info">
+                  <%= vehicle.contratti_count %> contratti
+                </a>
+              </td>
+              <td class="text-center">
+                <a href="/admin/vehicles/<%= vehicle.id %>/maintenance-schedule" class="badge badge-secondary">
+                  <%= vehicle.manutenzioni_count %> scadenze
+                </a>
+              </td>
+              <td>
+                <% if (vehicle.stato === 'in_riparazione') { %>
+                  <span class="badge badge-warning">In Riparazione</span>
+                <% } else if (vehicle.stato === 'fuori_servizio') { %>
+                  <span class="badge badge-error">Fuori Servizio</span>
+                <% } else if (vehicle.attivo === 1) { %>
+                  <span class="badge badge-success">Attivo</span>
+                <% } else { %>
+                  <span class="badge badge-gray">Disattivato</span>
+                <% } %>
+              </td>
+              <td>
+                <div class="flex gap-1">
+                  <a href="/admin/vehicles/edit/<%= vehicle.id %>" class="btn-icon" title="Modifica">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  <a href="/admin/vehicles/<%= vehicle.id %>/contracts" class="btn-icon" title="Contratti">
+                    <i class="fas fa-file-contract"></i>
+                  </a>
+                  <a href="/admin/vehicles/<%= vehicle.id %>/maintenance-schedule" class="btn-icon" title="Manutenzioni">
+                    <i class="fas fa-wrench"></i>
+                  </a>
+                  <button onclick="deleteVehicle(<%= vehicle.id %>, '<%= vehicle.targa %>')" class="btn-icon" title="Elimina">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+async function deleteVehicle(id, targa) {
+  if (!confirm(`Sei sicuro di voler eliminare il veicolo ${targa}?\n\nQuesta azione eliminerà anche tutti i contratti e le scadenze associate.`)) return;
+
+  try {
+    const response = await fetch(`/admin/vehicles/delete/${id}`, { method: 'POST' });
+    const data = await response.json();
+    
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert(data.message || 'Errore durante l\'eliminazione');
+    }
+  } catch (error) {
+    alert('Errore di connessione');
+  }
+}
+</script>

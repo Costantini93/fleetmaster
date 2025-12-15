@@ -1,0 +1,133 @@
+<% const currentPage = 'expiration'; const pageTitle = 'Alert Scadenze'; %>
+
+<div class="stats-grid mb-4">
+  <div class="stat-card error">
+    <div class="stat-header">
+      <div>
+        <div class="stat-title">Contratti Scaduti</div>
+        <div class="stat-value"><%= stats.overdueContracts %></div>
+      </div>
+      <div class="stat-icon"><i class="fas fa-exclamation-circle"></i></div>
+    </div>
+  </div>
+
+  <div class="stat-card warning">
+    <div class="stat-header">
+      <div>
+        <div class="stat-title">Scadenza entro 30gg</div>
+        <div class="stat-value"><%= stats.imminentContracts %></div>
+      </div>
+      <div class="stat-icon"><i class="fas fa-calendar-times"></i></div>
+    </div>
+  </div>
+
+  <div class="stat-card info">
+    <div class="stat-header">
+      <div>
+        <div class="stat-title">Manutenzione < 200km</div>
+        <div class="stat-value"><%= stats.imminentMaintenance %></div>
+      </div>
+      <div class="stat-icon"><i class="fas fa-wrench"></i></div>
+    </div>
+  </div>
+
+  <div class="stat-card success">
+    <div class="stat-header">
+      <div>
+        <div class="stat-title">Veicoli OK</div>
+        <div class="stat-value"><%= stats.okVehicles %></div>
+      </div>
+      <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+    </div>
+  </div>
+</div>
+
+<!-- Contratti Noleggio -->
+<div class="card mb-4">
+  <div class="card-header">
+    <h2 class="card-title">Contratti di Noleggio</h2>
+  </div>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Veicolo</th>
+          <th>Fornitore</th>
+          <th>Data Inizio</th>
+          <th>Data Scadenza</th>
+          <th>Giorni Rimanenti</th>
+          <th>Stato</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (expiringContracts.length === 0) { %>
+          <tr><td colspan="6" class="text-center text-secondary">Nessun contratto</td></tr>
+        <% } else { %>
+          <% expiringContracts.forEach(contract => { %>
+            <tr>
+              <td class="font-semibold"><%= contract.targa %> - <%= contract.modello %></td>
+              <td><%= contract.fornitore || '-' %></td>
+              <td><%= new Date(contract.data_inizio).toLocaleDateString('it-IT') %></td>
+              <td><%= new Date(contract.data_scadenza).toLocaleDateString('it-IT') %></td>
+              <td><%= contract.giorni_rimanenti %> giorni</td>
+              <td>
+                <% if (contract.giorni_rimanenti < 0) { %>
+                  <span class="badge badge-error">SCADUTO</span>
+                <% } else if (contract.giorni_rimanenti <= 30) { %>
+                  <span class="badge badge-warning">IMMINENTE</span>
+                <% } else { %>
+                  <span class="badge badge-success">OK</span>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Scadenzario Manutenzioni -->
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title">Scadenzario Manutenzioni</h2>
+  </div>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Veicolo</th>
+          <th>Tipo Manutenzione</th>
+          <th>Km Attuali</th>
+          <th>Prossima Manutenzione</th>
+          <th>Km Rimanenti</th>
+          <th>Stato</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (maintenanceAlerts.length === 0) { %>
+          <tr><td colspan="6" class="text-center text-secondary">Nessuna scadenza</td></tr>
+        <% } else { %>
+          <% maintenanceAlerts.forEach(schedule => { %>
+            <tr>
+              <td class="font-semibold"><%= schedule.targa %> - <%= schedule.modello %></td>
+              <td><%= schedule.tipo_manutenzione %></td>
+              <td><%= schedule.km_attuali.toLocaleString('it-IT') %> km</td>
+              <td><%= schedule.prossima_manutenzione_km.toLocaleString('it-IT') %> km</td>
+              <td><%= schedule.km_rimanenti.toLocaleString('it-IT') %> km</td>
+              <td>
+                <% if (schedule.km_rimanenti < 0) { %>
+                  <span class="badge badge-error">SUPERATO</span>
+                <% } else if (schedule.km_rimanenti <= 200) { %>
+                  <span class="badge badge-warning">URGENTE</span>
+                <% } else { %>
+                  <span class="badge badge-success">OK</span>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>

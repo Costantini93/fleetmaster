@@ -1,0 +1,186 @@
+<% const currentPage = 'assignments'; const pageTitle = 'Assegnazioni Veicoli'; %>
+
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Assegnazioni Veicoli</h2>
+      <p class="card-subtitle">Assegna veicoli agli autisti</p>
+    </div>
+  </div>
+
+  <form method="GET" action="/admin/assignments" class="mb-4">
+    <div style="display: flex; gap: 1rem; align-items: end; flex-wrap: wrap;">
+      <div class="form-group mb-0" style="flex: 1; min-width: 200px;">
+        <label class="form-label">Data</label>
+        <input type="date" name="date" class="form-input" value="<%= selectedDate %>" onchange="this.form.submit()">
+      </div>
+      <button type="submit" class="btn btn-secondary">
+        <i class="fas fa-sync"></i> Aggiorna
+      </button>
+    </div>
+  </form>
+
+  <div class="mb-4">
+    <h3 class="font-bold mb-3">Nuova Assegnazione</h3>
+    <form id="assignmentForm" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; align-items: end;">
+      <div class="form-group mb-0">
+        <label class="form-label">Autista (da turni del giorno) *</label>
+        <select name="user_id" class="form-select" required>
+          <option value="">Seleziona</option>
+          <% availableRiders.forEach(rider => { %>
+            <option value="<%= rider.id %>">
+              <%= rider.nome %> <%= rider.cognome %> - <%= rider.turno %>
+            </option>
+          <% }) %>
+        </select>
+        <% if (availableRiders.length === 0) { %>
+          <small class="text-warning">Nessun turno programmato per questa data</small>
+        <% } %>
+      </div>
+
+      <div class="form-group mb-0">
+        <label class="form-label">Veicolo Disponibile *</label>
+        <select name="vehicle_id" class="form-select" required>
+          <option value="">Seleziona</option>
+          <% availableVehicles.forEach(vehicle => { %>
+            <option value="<%= vehicle.id %>">
+              <%= vehicle.targa %> - <%= vehicle.modello %>
+            </option>
+          <% }) %>
+        </select>
+        <% if (availableVehicles.length === 0) { %>
+          <small class="text-warning">Nessun veicolo disponibile</small>
+        <% } %>
+      </div>
+
+      <input type="hidden" name="data" value="<%= selectedDate %>">
+
+      <button type="submit" class="btn btn-primary" <%= (availableRiders.length === 0 || availableVehicles.length === 0) ? 'disabled' : '' %>>
+        <i class="fas fa-plus"></i> Assegna
+      </button>
+    </form>
+  </div>
+
+  <div class="table-container">
+    <h3 class="font-bold mb-3">Assegnazioni del <%= new Date(selectedDate).toLocaleDateString('it-IT', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></h3>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Autista</th>
+          <th>Veicolo</th>
+          <th>Turno</th>
+          <th>Azioni</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (assignments.length === 0) { %>
+          <tr><td colspan="4" class="text-center text-secondary">Nessuna assegnazione per questa data</td></tr>
+        <% } else { %>
+          <% assignments.forEach(assignment => { %>
+            <tr>
+              <td>
+                <strong><%= assignment.nome %> <%= assignment.cognome %></strong><br>
+                <small class="text-secondary"><%= assignment.username %></small>
+              </td>
+              <td>
+                <strong><%= assignment.targa %></strong><br>
+                <small class="text-secondary"><%= assignment.modello %></small>
+              </td>
+              <td>
+                <% if (assignment.turno === 'mattina') { %>
+                  <span class="badge badge-primary">Mattina</span>
+                <% } else if (assignment.turno === 'pomeriggio') { %>
+                  <span class="badge badge-secondary">Pomeriggio</span>
+                <% } else { %>
+                  <span class="badge badge-gray">Notte</span>
+                <% } %>
+              </td>
+              <td>
+                <button onclick="deleteAssignment(<%= assignment.id %>)" class="btn-icon" title="Elimina">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <% if (assignments.length > 0) { %>
+    <div class="mt-4">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+        <div class="text-center p-3" style="background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%); color: white; border-radius: 10px;">
+          <div style="font-size: 2rem; font-weight: 700;"><%= assignments.length %></div>
+          <div style="font-size: 0.9rem; opacity: 0.9;">Assegnazioni Totali</div>
+        </div>
+        
+        <div class="text-center p-3" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border-radius: 10px;">
+          <div style="font-size: 2rem; font-weight: 700;"><%= availableVehicles.length %></div>
+          <div style="font-size: 0.9rem; opacity: 0.9;">Veicoli Disponibili</div>
+        </div>
+        
+        <div class="text-center p-3" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; border-radius: 10px;">
+          <div style="font-size: 2rem; font-weight: 700;"><%= availableRiders.length %></div>
+          <div style="font-size: 0.9rem; opacity: 0.9;">Autisti Disponibili</div>
+        </div>
+      </div>
+    </div>
+  <% } %>
+</div>
+
+<script>
+// Aggiungi assegnazione
+document.getElementById('assignmentForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  const formData = new FormData(this);
+  const data = Object.fromEntries(formData);
+  
+  // Recupera turno da user_id
+  const userSelect = this.querySelector('select[name="user_id"]');
+  const selectedOption = userSelect.options[userSelect.selectedIndex];
+  const turnoText = selectedOption.text.split(' - ')[1];
+  
+  let turno = 'mattina';
+  if (turnoText.toLowerCase().includes('pomeriggio')) turno = 'pomeriggio';
+  if (turnoText.toLowerCase().includes('notte')) turno = 'notte';
+  
+  data.turno = turno;
+  
+  try {
+    const response = await fetch('/admin/assignments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const result = await response.json();
+    
+    if (result.success) {
+      window.location.reload();
+    } else {
+      alert(result.message || 'Errore durante l\'assegnazione');
+    }
+  } catch (error) {
+    alert('Errore di connessione');
+  }
+});
+
+// Elimina assegnazione
+async function deleteAssignment(id) {
+  if (!confirm('Vuoi eliminare questa assegnazione?')) return;
+  
+  try {
+    const response = await fetch(`/admin/assignments/${id}/delete`, { method: 'POST' });
+    const data = await response.json();
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert(data.message || 'Errore durante l\'eliminazione');
+    }
+  } catch (error) {
+    alert('Errore di connessione');
+  }
+}
+</script>

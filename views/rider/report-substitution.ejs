@@ -1,0 +1,238 @@
+<% const currentPage = 'dashboard'; const pageTitle = 'Modulo Sostituzione Veicolo'; %>
+
+<div class="card" style="max-width: 1200px; margin: 0 auto;">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">
+        <i class="fas fa-exchange-alt"></i> Modulo Sostituzione Veicolo
+      </h2>
+      <p class="card-subtitle">Compila questo modulo per documentare il passaggio al nuovo veicolo</p>
+    </div>
+  </div>
+
+  <!-- Info Sostituzione -->
+  <div class="mb-4" style="background: #fffbeb; padding: 1.5rem; border-radius: 12px; border-left: 4px solid #f59e0b;">
+    <h3 class="font-bold mb-3" style="color: #92400e;">
+      <i class="fas fa-info-circle"></i> Informazioni Sostituzione
+    </h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+      <div>
+        <div style="color: #dc2626; font-weight: bold; margin-bottom: 0.5rem;">Veicolo Sostituito:</div>
+        <div style="background: white; padding: 1rem; border-radius: 8px;">
+          <div><strong>Targa:</strong> <%= substitution.vecchia_targa %></div>
+          <div><strong>Modello:</strong> <%= substitution.vecchio_modello %></div>
+        </div>
+      </div>
+      <div>
+        <div style="color: #059669; font-weight: bold; margin-bottom: 0.5rem;">Nuovo Veicolo:</div>
+        <div style="background: white; padding: 1rem; border-radius: 8px;">
+          <div><strong>Targa:</strong> <%= substitution.nuova_targa %></div>
+          <div><strong>Modello:</strong> <%= substitution.nuovo_modello %></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <form action="/rider/reports/substitution" method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="substitution_id" value="<%= substitution.id %>">
+
+    <!-- Dati Partenza Nuovo Veicolo -->
+    <div class="mb-4">
+      <h3 class="font-bold mb-3">Dati Partenza Nuovo Veicolo</h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label">Km Partenza *</label>
+          <input type="number" name="km_partenza" class="form-input" required readonly value="<%= vehicle.km_attuali %>" style="background-color: #f3f4f6; cursor: not-allowed;">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Ora Partenza *</label>
+          <input type="time" name="ora_partenza" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Codice Giro *</label>
+          <input type="text" name="codice_giro" class="form-input" required placeholder="Es: G001">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Numero Ditta</label>
+          <input type="text" name="numero_ditta" class="form-input" placeholder="Opzionale">
+        </div>
+      </div>
+    </div>
+
+    <!-- Foto Veicolo -->
+    <div class="mb-4">
+      <h3 class="font-bold mb-3">Documentazione Fotografica Nuovo Veicolo *</h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label">Foto Frontale *</label>
+          <input type="file" name="foto_frontale" class="form-input" accept="image/*" capture="environment" required onchange="previewImage(this, 'preview_frontale')">
+          <img id="preview_frontale" style="display: none; width: 100%; max-width: 250px; margin-top: 0.5rem; border-radius: 8px; border: 2px solid #e5e7eb;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Foto Posteriore *</label>
+          <input type="file" name="foto_posteriore" class="form-input" accept="image/*" capture="environment" required onchange="previewImage(this, 'preview_posteriore')">
+          <img id="preview_posteriore" style="display: none; width: 100%; max-width: 250px; margin-top: 0.5rem; border-radius: 8px; border: 2px solid #e5e7eb;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Foto Lato Destro *</label>
+          <input type="file" name="foto_destra" class="form-input" accept="image/*" capture="environment" required onchange="previewImage(this, 'preview_destra')">
+          <img id="preview_destra" style="display: none; width: 100%; max-width: 250px; margin-top: 0.5rem; border-radius: 8px; border: 2px solid #e5e7eb;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Foto Lato Sinistro *</label>
+          <input type="file" name="foto_sinistra" class="form-input" accept="image/*" capture="environment" required onchange="previewImage(this, 'preview_sinistra')">
+          <img id="preview_sinistra" style="display: none; width: 100%; max-width: 250px; margin-top: 0.5rem; border-radius: 8px; border: 2px solid #e5e7eb;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Foto Cruscotto *</label>
+          <input type="file" name="foto_cruscotto" class="form-input" accept="image/*" capture="environment" required onchange="previewImage(this, 'preview_cruscotto')">
+          <img id="preview_cruscotto" style="display: none; width: 100%; max-width: 250px; margin-top: 0.5rem; border-radius: 8px; border: 2px solid #e5e7eb;">
+        </div>
+      </div>
+    </div>
+
+    <!-- Firma -->
+    <div class="mb-4">
+      <h3 class="font-bold mb-3">Firma *</h3>
+      <div style="border: 2px solid #e5e7eb; border-radius: 8px; background: white; overflow: hidden;">
+        <canvas id="signatureCanvas" width="600" height="200" style="display: block; width: 100%; max-width: 600px; touch-action: none; cursor: crosshair;"></canvas>
+      </div>
+      <div class="flex gap-2 mt-2">
+        <button type="button" onclick="clearSignature()" class="btn btn-outline">
+          <i class="fas fa-eraser"></i> Cancella Firma
+        </button>
+      </div>
+      <input type="hidden" name="firma" id="firmaInput" required>
+    </div>
+
+    <!-- Pulsanti -->
+    <div class="flex gap-2">
+      <a href="/rider/dashboard" class="btn btn-outline">
+        <i class="fas fa-arrow-left"></i> Annulla
+      </a>
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-save"></i> Conferma Sostituzione
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+// Funzione per mostrare anteprima foto
+function previewImage(input, previewId) {
+  const preview = document.getElementById(previewId);
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+// Gestione firma digitale
+const canvas = document.getElementById('signatureCanvas');
+const ctx = canvas.getContext('2d');
+let isDrawing = false;
+let lastX = 0;
+let lastY = 0;
+
+// Imposta dimensioni reali canvas
+canvas.width = 600;
+canvas.height = 200;
+
+// Sfondo bianco
+ctx.fillStyle = 'white';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+ctx.strokeStyle = '#000';
+ctx.lineWidth = 2;
+ctx.lineCap = 'round';
+ctx.lineJoin = 'round';
+
+function startDrawing(e) {
+  isDrawing = true;
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  
+  if (e.type.includes('touch')) {
+    lastX = (e.touches[0].clientX - rect.left) * scaleX;
+    lastY = (e.touches[0].clientY - rect.top) * scaleY;
+  } else {
+    lastX = (e.offsetX || e.clientX - rect.left) * scaleX;
+    lastY = (e.offsetY || e.clientY - rect.top) * scaleY;
+  }
+}
+
+function draw(e) {
+  if (!isDrawing) return;
+  e.preventDefault();
+  
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  
+  let currentX, currentY;
+  if (e.type.includes('touch')) {
+    currentX = (e.touches[0].clientX - rect.left) * scaleX;
+    currentY = (e.touches[0].clientY - rect.top) * scaleY;
+  } else {
+    currentX = (e.offsetX || e.clientX - rect.left) * scaleX;
+    currentY = (e.offsetY || e.clientY - rect.top) * scaleY;
+  }
+  
+  ctx.beginPath();
+  ctx.moveTo(lastX, lastY);
+  ctx.lineTo(currentX, currentY);
+  ctx.stroke();
+  
+  lastX = currentX;
+  lastY = currentY;
+}
+
+function stopDrawing() {
+  isDrawing = false;
+}
+
+function clearSignature() {
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  document.getElementById('firmaInput').value = '';
+}
+
+canvas.addEventListener('mousedown', startDrawing);
+canvas.addEventListener('mousemove', draw);
+canvas.addEventListener('mouseup', stopDrawing);
+canvas.addEventListener('mouseout', stopDrawing);
+
+canvas.addEventListener('touchstart', startDrawing);
+canvas.addEventListener('touchmove', draw);
+canvas.addEventListener('touchend', stopDrawing);
+
+// Salva firma prima del submit
+document.querySelector('form').addEventListener('submit', function(e) {
+  const firmaData = canvas.toDataURL('image/png');
+  document.getElementById('firmaInput').value = firmaData;
+  
+  if (firmaData === canvas.toDataURL('image/png')) {
+    // Verifica che ci sia una firma
+    ctx.fillStyle = 'white';
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCtx.fillStyle = 'white';
+    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+    
+    if (canvas.toDataURL() === tempCanvas.toDataURL()) {
+      e.preventDefault();
+      alert('Per favore, aggiungi la tua firma prima di continuare');
+      return false;
+    }
+  }
+});
+</script>

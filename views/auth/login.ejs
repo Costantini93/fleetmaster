@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    .login-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 1rem;
+    }
+    .login-card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      width: 100%;
+      max-width: 450px;
+    }
+    .login-logo {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .login-logo-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      color: white;
+      margin-bottom: 1rem;
+    }
+    .login-title {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+    .login-subtitle {
+      color: var(--text-secondary);
+      font-size: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-logo">
+        <img src="/logo2.svg" alt="Fleet Master" style="height: 320px; width: auto; margin-bottom: 1.5rem;">
+      </div>
+
+      <% if (success_msg && success_msg.length > 0) { %>
+        <div class="flash-message flash-success mb-3">
+          <i class="fas fa-check-circle"></i>
+          <span><%= success_msg %></span>
+        </div>
+      <% } %>
+      <% if (error_msg && error_msg.length > 0) { %>
+        <div class="flash-message flash-error mb-3">
+          <i class="fas fa-times-circle"></i>
+          <span><%= error_msg %></span>
+        </div>
+      <% } %>
+
+      <form action="/login" method="POST">
+        <div class="form-group">
+          <label class="form-label">
+            <i class="fas fa-user"></i> Username
+          </label>
+          <input type="text" name="username" class="form-input" required autofocus placeholder="Inserisci il tuo username">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            <i class="fas fa-lock"></i> Password
+          </label>
+          <input type="password" name="password" class="form-input" required placeholder="Inserisci la tua password">
+        </div>
+
+        <button type="submit" class="btn btn-primary w-full">
+          <i class="fas fa-sign-in-alt"></i>
+          Accedi
+        </button>
+      </form>
+
+      <div class="text-center mt-4" style="color: var(--text-secondary); font-size: 0.9rem;">
+        <p>&copy; 2025 Fleet Master</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
