@@ -27,7 +27,7 @@ app.use(session({
   cookie: {
     maxAge: parseInt(process.env.SESSION_MAX_AGE) || 86400000, // 24 ore
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production'
+    secure: process.env.NODE_ENV === 'production' && process.env.RENDER === 'true'
   }
 }));
 
