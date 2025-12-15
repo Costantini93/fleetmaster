@@ -3,7 +3,8 @@ require('dotenv').config();
 
 // Usa database locale SQLite per sviluppo se Turso non è configurato
 const db = createClient({
-  url: process.env.TURSO_DATABASE_URL || 'file:database.db'
+  url: process.env.TURSO_DATABASE_URL || 'file:database.db',
+  authToken: process.env.TURSO_AUTH_TOKEN
 });
 
 // Funzione helper per eseguire query
