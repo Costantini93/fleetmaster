@@ -133,7 +133,13 @@
   <div class="mt-4">
     <h3 class="text-lg font-bold mb-3">Firma Digitale</h3>
     <div style="display: inline-block; border: 2px solid #e5e7eb; border-radius: 8px; padding: 1rem; background: white;">
-      <img src="<%= report.firma_partenza || report.firma %>" alt="Firma" style="max-width: 500px; display: block;">
+      <% 
+        const firmaData = report.firma_partenza || report.firma;
+        const firmaSrc = (typeof firmaData === 'string' && (firmaData.startsWith('/') || firmaData.startsWith('data:'))) 
+          ? firmaData 
+          : 'data:image/png;base64,' + firmaData;
+      %>
+      <img src="<%= firmaSrc %>" alt="Firma" style="max-width: 500px; display: block;">
     </div>
   </div>
   <% } %>
