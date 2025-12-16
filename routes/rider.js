@@ -157,6 +157,9 @@ router.get('/reports/departure', (req, res) => {
 // NUOVO: Endpoint JSON per bypassare WAF Vercel con multipart/form-data
 router.post('/reports/departure', async (req, res) => {
   try {
+    console.log('📥 Ricevuta richiesta POST /reports/departure');
+    console.log('Body keys:', Object.keys(req.body));
+    
     const userId = req.user.id;
     const {
       vehicle_id,
@@ -182,19 +185,13 @@ router.post('/reports/departure', async (req, res) => {
     );
 
     if (!assignment) {
-      req.flash('error_msg', 'Veicolo non assegnato a te per oggi');
-      return res.redirect('/rider/dashboard');
+      return res.status(400).json({ success: false, message: 'Veicolo non assegnato a te per oggi' });
     }
 
     // Validazione km
     const vehicle = await get('SELECT km_attuali FROM vehicles WHERE id = ?', [vehicle_id]);
     if (parseInt(km_partenza) < vehicle.km_attuali) {
-      req.flash('error_msg', 'I km di partenza non possono essere inferiori ai km attuali del veicolo');
-      return res.render('rider/report-departure', {
-        title: 'Rapporto di Partenza - ROBI Fleet',
-        assignment,
-        formData: { codice_giro, km_partenza, ora_partenza, numero_ditta, pacchi_ritirati }
-      });
+      return res.status(400).json({ success: false, message: 'I km di partenza non possono essere inferiori ai km attuali del veicolo' });
     }
 
     // Le foto arrivano già come base64 dal client (bypassando multipart/form-data e WAF Vercel)
