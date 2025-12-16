@@ -6,23 +6,9 @@ const fs = require('fs');
 const { get, all, run } = require('../config/database');
 const { isAuthenticated, isRider, checkFirstLogin, logActivity } = require('../middleware/auth');
 
-// Configurazione upload
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = 'uploads/vehicle-photos';
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
+// Configurazione upload - usa memoryStorage per Vercel
 const upload = multer({
-  storage: storage,
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: parseInt(process.env.MAX_FILE_SIZE) || 5242880 // 5MB default
   },
@@ -209,13 +195,13 @@ router.post('/reports/departure', upload.fields([
       });
     }
 
-    // Salva foto
+    // Salva foto come base64 (temporaneo per Vercel serverless)
     const photos = {
-      foto_frontale: req.files['foto_frontale'] ? req.files['foto_frontale'][0].filename : null,
-      foto_posteriore: req.files['foto_posteriore'] ? req.files['foto_posteriore'][0].filename : null,
-      foto_destra: req.files['foto_destra'] ? req.files['foto_destra'][0].filename : null,
-      foto_sinistra: req.files['foto_sinistra'] ? req.files['foto_sinistra'][0].filename : null,
-      foto_cruscotto: req.files['foto_cruscotto'] ? req.files['foto_cruscotto'][0].filename : null
+      foto_frontale: req.files['foto_frontale'] ? req.files['foto_frontale'][0].buffer.toString('base64') : null,
+      foto_posteriore: req.files['foto_posteriore'] ? req.files['foto_posteriore'][0].buffer.toString('base64') : null,
+      foto_destra: req.files['foto_destra'] ? req.files['foto_destra'][0].buffer.toString('base64') : null,
+      foto_sinistra: req.files['foto_sinistra'] ? req.files['foto_sinistra'][0].buffer.toString('base64') : null,
+      foto_cruscotto: req.files['foto_cruscotto'] ? req.files['foto_cruscotto'][0].buffer.toString('base64') : null
     };
 
     // Formatta ora partenza per il database
@@ -677,19 +663,17 @@ router.post('/reports/substitution', upload.fields([
       return res.redirect('/rider/dashboard');
     }
 
-    // Salva foto
-    const fotoFrontale = req.files['foto_frontale'] ? req.files['foto_frontale'][0].filename : null;
-    const fotoPosterio = req.files['foto_posteriore'] ? req.files['foto_posteriore'][0].filename : null;
-    const fotoDestra = req.files['foto_destra'] ? req.files['foto_destra'][0].filename : null;
-    const fotoSinistra = req.files['foto_sinistra'] ? req.files['foto_sinistra'][0].filename : null;
-    const fotoCruscotto = req.files['foto_cruscotto'] ? req.files['foto_cruscotto'][0].filename : null;
+    // Salva foto come base64 (temporaneo per Vercel serverless)
+    const fotoFrontale = req.files['foto_frontale'] ? req.files['foto_frontale'][0].buffer.toString('base64') : null;
+    const fotoPosterio = req.files['foto_posteriore'] ? req.files['foto_posteriore'][0].buffer.toString('base64') : null;
+    const fotoDestra = req.files['foto_destra'] ? req.files['foto_destra'][0].buffer.toString('base64') : null;
+    const fotoSinistra = req.files['foto_sinistra'] ? req.files['foto_sinistra'][0].buffer.toString('base64') : null;
+    const fotoCruscotto = req.files['foto_cruscotto'] ? req.files['foto_cruscotto'][0].buffer.toString('base64') : null;
 
-    // Salva firma
-    let firmaFilename = null;
+    // Salva firma come base64
+    let firmaBase64 = null;
     if (firma) {
-      const firmaBuffer = Buffer.from(firma.split(',')[1], 'base64');
-      firmaFilename = `firma_${Date.now()}_${userId}.png`;
-      await fs.promises.writeFile(path.join(__dirname, '../uploads/vehicle-photos', firmaFilename), firmaBuffer);
+      firmaBase64 = firma.split(',')[1]; // Rimuovi il prefijo data:image/png;base64,
     }
 
     // Crea un rapporto di partenza per il nuovo veicolo
@@ -704,7 +688,7 @@ router.post('/reports/substitution', upload.fields([
       userId, substitution.vehicle_sostituto_id, today, 
       km_partenza, ora_partenza, codice_giro, numero_ditta || null,
       fotoFrontale, fotoPosterio, fotoDestra, fotoSinistra, fotoCruscotto,
-      firmaFilename, substitution_id
+      firmaBase64, substitution_id
     ]);
 
     // Marca la sostituzione come compilata
