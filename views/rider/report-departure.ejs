@@ -109,7 +109,17 @@
 </div>
 
 <script>
-const signaturePad = new RobiFleet.SignaturePad('signatureCanvas');
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('🔧 Script inizializzato');
+  
+  // Verifica che RobiFleet sia disponibile
+  if (typeof RobiFleet === 'undefined' || !RobiFleet.SignaturePad) {
+    alert('❌ ERRORE: RobiFleet.SignaturePad non disponibile. Ricarica la pagina.');
+    return;
+  }
+  
+  const signaturePad = new RobiFleet.SignaturePad('signatureCanvas');
+  console.log('✅ SignaturePad inizializzato');
 
 // Funzione per comprimere immagini MOLTO aggressivamente per Vercel (limite 4.5MB totale)
 async function compressImage(file, maxWidth = 800, quality = 0.5) {
@@ -281,4 +291,6 @@ document.querySelector('#departureForm').addEventListener('submit', async functi
     submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Registra Partenza';
   }
 });
+
+}); // Fine DOMContentLoaded
 </script>
