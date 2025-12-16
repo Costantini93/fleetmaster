@@ -106,6 +106,69 @@
 <script>
 const signaturePad = new RobiFleet.SignaturePad('signatureCanvas');
 
+// Funzione per comprimere immagini
+async function compressImage(file, maxWidth = 1920, quality = 0.8) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (e) => {
+      const img = new Image();
+      img.src = e.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        // Ridimensiona se necessario
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        canvas.toBlob((blob) => {
+          resolve(new File([blob], file.name, {
+            type: 'image/jpeg',
+            lastModified: Date.now()
+          }));
+        }, 'image/jpeg', quality);
+      };
+    };
+  });
+}
+
+// Comprimi immagini quando vengono selezionate
+document.querySelectorAll('input[type="file"]').forEach(input => {
+  input.addEventListener('change', async function(e) {
+    if (this.files && this.files[0]) {
+      const file = this.files[0];
+      console.log(`📸 File originale: ${(file.size / 1024).toFixed(0)}KB`);
+      
+      // Comprimi l'immagine
+      const compressed = await compressImage(file);
+      console.log(`📸 File compresso: ${(compressed.size / 1024).toFixed(0)}KB`);
+      
+      // Sostituisci il file nell'input
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(compressed);
+      this.files = dataTransfer.files;
+      
+      // Mostra anteprima
+      const previewId = this.getAttribute('data-preview');
+      if (previewId) {
+        const preview = document.getElementById(previewId);
+        preview.src = URL.createObjectURL(compressed);
+        preview.style.display = 'block';
+      }
+    }
+  });
+});
+
 document.querySelector('form').addEventListener('submit', function(e) {
   const sigData = signaturePad.getDataURL();
   if (!sigData || sigData === 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==') {
@@ -114,5 +177,10 @@ document.querySelector('form').addEventListener('submit', function(e) {
     return;
   }
   document.getElementById('firma_partenza').value = sigData;
+  
+  // Mostra loader durante invio
+  const submitBtn = this.querySelector('button[type="submit"]');
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Invio in corso...';
 });
 </script>

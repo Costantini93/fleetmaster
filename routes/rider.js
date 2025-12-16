@@ -10,7 +10,9 @@ const { isAuthenticated, isRider, checkFirstLogin, logActivity } = require('../m
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: parseInt(process.env.MAX_FILE_SIZE) || 5242880 // 5MB default
+    fileSize: 10 * 1024 * 1024, // 10MB per file
+    files: 5,
+    fieldSize: 10 * 1024 * 1024 // 10MB per field
   },
   fileFilter: function (req, file, cb) {
     const allowedTypes = /jpeg|jpg|png/;
@@ -152,13 +154,37 @@ router.get('/reports/departure', (req, res) => {
   res.redirect('/rider/reports/new');
 });
 
-router.post('/reports/departure', upload.fields([
-  { name: 'foto_frontale', maxCount: 1 },
-  { name: 'foto_posteriore', maxCount: 1 },
-  { name: 'foto_destra', maxCount: 1 },
-  { name: 'foto_sinistra', maxCount: 1 },
-  { name: 'foto_cruscotto', maxCount: 1 }
-]), async (req, res) => {
+// Wrapper per gestire errori di Multer
+const handleUpload = (req, res, next) => {
+  const uploadMiddleware = upload.fields([
+    { name: 'foto_frontale', maxCount: 1 },
+    { name: 'foto_posteriore', maxCount: 1 },
+    { name: 'foto_destra', maxCount: 1 },
+    { name: 'foto_sinistra', maxCount: 1 },
+    { name: 'foto_cruscotto', maxCount: 1 }
+  ]);
+  
+  uploadMiddleware(req, res, (err) => {
+    if (err) {
+      console.error('Errore upload Multer:', err);
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          req.flash('error_msg', 'File troppo grande. Max 10MB per foto.');
+        } else if (err.code === 'LIMIT_FILE_COUNT') {
+          req.flash('error_msg', 'Troppi file caricati.');
+        } else {
+          req.flash('error_msg', `Errore upload: ${err.message}`);
+        }
+      } else {
+        req.flash('error_msg', err.message || 'Errore durante upload foto');
+      }
+      return res.redirect('/rider/reports/new');
+    }
+    next();
+  });
+};
+
+router.post('/reports/departure', handleUpload, async (req, res) => {
   try {
     const userId = req.user.id;
     const {
