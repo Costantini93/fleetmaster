@@ -20,12 +20,28 @@
       "dest": "/public/js/$1"
     },
     {
+      "src": "/icons/(.*)",
+      "dest": "/public/icons/$1"
+    },
+    {
       "src": "/logo2.svg",
       "dest": "/public/logo2.svg"
     },
     {
       "src": "/manifest.json",
       "dest": "/public/manifest.json"
+    },
+    {
+      "src": "/service-worker.js",
+      "dest": "/public/service-worker.js"
+    },
+    {
+      "src": "/offline.html",
+      "dest": "/public/offline.html"
+    },
+    {
+      "src": "/favicon.ico",
+      "dest": "/public/favicon.ico"
     },
     {
       "handle": "filesystem"
