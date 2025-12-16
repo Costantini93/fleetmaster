@@ -199,7 +199,8 @@ class SignaturePad {
   }
   
   getDataURL() {
-    return this.canvas.toDataURL('image/png');
+    // Riduci qualità firma per risparmiare spazio (per Vercel limit)
+    return this.canvas.toDataURL('image/jpeg', 0.7);
   }
 }
 
