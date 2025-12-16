@@ -98,7 +98,7 @@
         <div>
           <p class="font-semibold mb-2">Frontale</p>
           <% 
-            const frontaleSrc = (typeof report.foto_frontale === 'string' && (report.foto_frontale.startsWith('/') || report.foto_frontale.startsWith('data:'))) 
+            const frontaleSrc = (typeof report.foto_frontale === 'string' && report.foto_frontale.startsWith('data:')) 
               ? report.foto_frontale 
               : 'data:image/jpeg;base64,' + report.foto_frontale;
           %>
@@ -109,7 +109,7 @@
         <div>
           <p class="font-semibold mb-2">Posteriore</p>
           <% 
-            const posterioreSrc = (typeof report.foto_posteriore === 'string' && (report.foto_posteriore.startsWith('/') || report.foto_posteriore.startsWith('data:'))) 
+            const posterioreSrc = (typeof report.foto_posteriore === 'string' && report.foto_posteriore.startsWith('data:')) 
               ? report.foto_posteriore 
               : 'data:image/jpeg;base64,' + report.foto_posteriore;
           %>
@@ -120,7 +120,7 @@
         <div>
           <p class="font-semibold mb-2">Destra</p>
           <% 
-            const destraSrc = (typeof report.foto_destra === 'string' && (report.foto_destra.startsWith('/') || report.foto_destra.startsWith('data:'))) 
+            const destraSrc = (typeof report.foto_destra === 'string' && report.foto_destra.startsWith('data:')) 
               ? report.foto_destra 
               : 'data:image/jpeg;base64,' + report.foto_destra;
           %>
@@ -131,7 +131,7 @@
         <div>
           <p class="font-semibold mb-2">Sinistra</p>
           <% 
-            const sinistraSrc = (typeof report.foto_sinistra === 'string' && (report.foto_sinistra.startsWith('/') || report.foto_sinistra.startsWith('data:'))) 
+            const sinistraSrc = (typeof report.foto_sinistra === 'string' && report.foto_sinistra.startsWith('data:')) 
               ? report.foto_sinistra 
               : 'data:image/jpeg;base64,' + report.foto_sinistra;
           %>
@@ -142,7 +142,7 @@
         <div>
           <p class="font-semibold mb-2">Cruscotto</p>
           <% 
-            const cruscottoSrc = (typeof report.foto_cruscotto === 'string' && (report.foto_cruscotto.startsWith('/') || report.foto_cruscotto.startsWith('data:'))) 
+            const cruscottoSrc = (typeof report.foto_cruscotto === 'string' && report.foto_cruscotto.startsWith('data:')) 
               ? report.foto_cruscotto 
               : 'data:image/jpeg;base64,' + report.foto_cruscotto;
           %>
@@ -160,7 +160,7 @@
     <div style="display: inline-block; border: 2px solid #e5e7eb; border-radius: 8px; padding: 1rem; background: white;">
       <% 
         const firmaData = report.firma_partenza || report.firma;
-        const firmaSrc = (typeof firmaData === 'string' && (firmaData.startsWith('/') || firmaData.startsWith('data:'))) 
+        const firmaSrc = (typeof firmaData === 'string' && firmaData.startsWith('data:')) 
           ? firmaData 
           : 'data:image/png;base64,' + firmaData;
       %>
