@@ -1,17 +1,29 @@
+const jwt = require('jsonwebtoken');
 const { get, all } = require('../config/database');
 
 // Middleware per verificare se l'utente è autenticato
 function isAuthenticated(req, res, next) {
-  if (req.session && req.session.user) {
-    return next();
+  const token = req.cookies.token;
+  
+  if (!token) {
+    req.flash('error_msg', 'Devi effettuare il login per accedere a questa pagina');
+    return res.redirect('/login');
   }
-  req.flash('error_msg', 'Devi effettuare il login per accedere a questa pagina');
-  res.redirect('/login');
+
+  try {
+    const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'robi-secret-key-change-in-production');
+    req.user = decoded;
+    return next();
+  } catch (error) {
+    req.flash('error_msg', 'Sessione scaduta. Effettua nuovamente il login');
+    res.clearCookie('token');
+    return res.redirect('/login');
+  }
 }
 
 // Middleware per verificare se l'utente è admin
 async function isAdmin(req, res, next) {
-  if (req.session && req.session.user && req.session.user.ruolo === 'admin') {
+  if (req.user && req.user.ruolo === 'admin') {
     // Aggiungi conteggio richieste manutenzione non lette
     try {
       const result = await get('SELECT COUNT(*) as count FROM maintenance_requests WHERE letta = 0');
@@ -28,7 +40,7 @@ async function isAdmin(req, res, next) {
 
 // Middleware per verificare se l'utente è rider
 function isRider(req, res, next) {
-  if (req.session && req.session.user && req.session.user.ruolo === 'rider') {
+  if (req.user && req.user.ruolo === 'rider') {
     return next();
   }
   req.flash('error_msg', 'Non hai i permessi per accedere a questa pagina');
@@ -37,8 +49,8 @@ function isRider(req, res, next) {
 
 // Middleware per verificare se l'utente deve cambiare password
 async function checkFirstLogin(req, res, next) {
-  if (req.session && req.session.user) {
-    const user = await get('SELECT primo_accesso FROM users WHERE id = ?', [req.session.user.id]);
+  if (req.user) {
+    const user = await get('SELECT primo_accesso FROM users WHERE id = ?', [req.user.id]);
     if (user && user.primo_accesso === 1) {
       // Se l'utente sta andando alla pagina di cambio password, lascialo passare
       if (req.path === '/change-password' || req.path === '/logout') {

@@ -1,7 +1,6 @@
 require('dotenv').config();
 const express = require('express');
-const session = require('express-session');
-const flash = require('connect-flash');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 const app = express();
 
@@ -18,27 +17,60 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
+app.use(cookieParser());
 
-// Session configuration
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'robi-secret-key-change-in-production',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    maxAge: parseInt(process.env.SESSION_MAX_AGE) || 86400000, // 24 ore
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production' && process.env.RENDER === 'true'
+// Lightweight flash messages without sessions
+app.use((req, res, next) => {
+  function readFlash() {
+    try {
+      return req.cookies.__flash ? JSON.parse(req.cookies.__flash) : {};
+    } catch {
+      return {};
+    }
   }
-}));
 
-app.use(flash());
+  const stored = readFlash();
+  res.locals.success_msg = stored.success_msg || [];
+  res.locals.error_msg = stored.error_msg || [];
+  res.locals.error = stored.error || [];
+
+  req.flash = (type, msg) => {
+    const current = readFlash();
+    if (!current[type]) current[type] = [];
+    current[type].push(msg);
+    res.cookie('__flash', JSON.stringify(current), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'Lax',
+      path: '/',
+      maxAge: 300000 // 5 minuti
+    });
+  };
+
+  // Clear flash after it has been read for this request
+  if (req.cookies.__flash) {
+    res.clearCookie('__flash');
+  }
+  next();
+});
+
+// JWT middleware to decode user from token
+const jwt = require('jsonwebtoken');
+app.use((req, res, next) => {
+  const token = req.cookies.token;
+  if (token) {
+    try {
+      req.user = jwt.verify(token, process.env.SESSION_SECRET || 'robi-secret-key-change-in-production');
+    } catch (error) {
+      req.user = null;
+    }
+  }
+  next();
+});
 
 // Global variables middleware
 app.use((req, res, next) => {
-  res.locals.user = req.session.user || null;
-  res.locals.success_msg = req.flash('success_msg');
-  res.locals.error_msg = req.flash('error_msg');
-  res.locals.error = req.flash('error');
+  res.locals.user = req.user || null;
   next();
 });
 
@@ -96,8 +128,9 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server Fleet Master avviato su porta ${PORT}`);
+const HOST = process.env.HOST || '0.0.0.0';
+app.listen(PORT, HOST, () => {
+  console.log(`🚀 Server Fleet Master avviato su ${HOST}:${PORT}`);
   console.log(`📱 Ambiente: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🌐 URL: http://localhost:${PORT}`);
 });

@@ -1,12 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const { get, run } = require('../config/database');
 const { isAuthenticated, logActivity } = require('../middleware/auth');
 
 // Pagina login
 router.get('/login', (req, res) => {
-  if (req.session.user) {
+  if (req.cookies.token) {
     return res.redirect('/');
   }
   res.render('auth/login', { title: 'Login - ROBI Fleet' });
@@ -36,15 +37,28 @@ router.post('/login', async (req, res) => {
       return res.redirect('/login');
     }
 
-    // Salva utente in sessione
-    req.session.user = {
-      id: user.id,
-      nome: user.nome,
-      cognome: user.cognome,
-      username: user.username,
-      ruolo: user.ruolo,
-      primo_accesso: user.primo_accesso
-    };
+    // Crea JWT token
+    const token = jwt.sign(
+      {
+        id: user.id,
+        nome: user.nome,
+        cognome: user.cognome,
+        username: user.username,
+        ruolo: user.ruolo,
+        primo_accesso: user.primo_accesso
+      },
+      process.env.SESSION_SECRET || 'robi-secret-key-change-in-production',
+      { expiresIn: '24h' }
+    );
+
+    // Imposta cookie con JWT
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'Lax',
+      path: '/',
+      maxAge: 86400000 // 24 ore
+    });
 
     // Log attività
     await logActivity(user.id, user.username, 'LOGIN', 'Accesso al sistema');
@@ -78,7 +92,7 @@ router.get('/change-password', isAuthenticated, (req, res) => {
 // Processo cambio password
 router.post('/change-password', isAuthenticated, async (req, res) => {
   const { current_password, new_password, confirm_password } = req.body;
-  const userId = req.session.user.id;
+  const userId = req.user.id;
 
   try {
     // Validazione
@@ -108,16 +122,35 @@ router.post('/change-password', isAuthenticated, async (req, res) => {
       [hashedPassword, userId]
     );
 
-    // Aggiorna sessione
-    req.session.user.primo_accesso = 0;
+    // Rigenera JWT token con primo_accesso aggiornato
+    const token = jwt.sign(
+      {
+        id: req.user.id,
+        nome: req.user.nome,
+        cognome: req.user.cognome,
+        username: req.user.username,
+        ruolo: req.user.ruolo,
+        primo_accesso: 0
+      },
+      process.env.SESSION_SECRET || 'robi-secret-key-change-in-production',
+      { expiresIn: '24h' }
+    );
+
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'Lax',
+      path: '/',
+      maxAge: 86400000 // 24 ore
+    });
 
     // Log attività
-    await logActivity(userId, req.session.user.username, 'CAMBIO_PASSWORD', 'Password modificata con successo');
+    await logActivity(userId, req.user.username, 'CAMBIO_PASSWORD', 'Password modificata con successo');
 
     req.flash('success_msg', 'Password cambiata con successo!');
     
     // Reindirizza in base al ruolo
-    if (req.session.user.ruolo === 'admin') {
+    if (req.user.ruolo === 'admin') {
       return res.redirect('/admin/dashboard');
     } else {
       return res.redirect('/rider/dashboard');
@@ -132,31 +165,28 @@ router.post('/change-password', isAuthenticated, async (req, res) => {
 
 // Logout
 router.get('/logout', isAuthenticated, async (req, res) => {
-  const username = req.session.user.username;
-  const userId = req.session.user.id;
+  const username = req.user.username;
+  const userId = req.user.id;
 
   // Log attività
   await logActivity(userId, username, 'LOGOUT', 'Disconnessione dal sistema');
 
-  req.session.destroy((err) => {
-    if (err) {
-      console.error('Errore logout:', err);
-    }
-    res.redirect('/login');
-  });
+  // Rimuovi cookie JWT
+  res.clearCookie('token');
+  res.redirect('/login');
 });
 
 // Root redirect
 router.get('/', (req, res) => {
-  if (!req.session.user) {
+  if (!req.user) {
     return res.redirect('/login');
   }
 
-  if (req.session.user.primo_accesso === 1) {
+  if (req.user.primo_accesso === 1) {
     return res.redirect('/change-password');
   }
 
-  if (req.session.user.ruolo === 'admin') {
+  if (req.user.ruolo === 'admin') {
     return res.redirect('/admin/dashboard');
   } else {
     return res.redirect('/rider/dashboard');
