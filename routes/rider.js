@@ -161,6 +161,11 @@ router.get('/reports/new', async (req, res) => {
   }
 });
 
+// Redirect legacy route
+router.get('/reports/departure', (req, res) => {
+  res.redirect('/rider/reports/new');
+});
+
 router.post('/reports/departure', upload.fields([
   { name: 'foto_frontale', maxCount: 1 },
   { name: 'foto_posteriore', maxCount: 1 },
