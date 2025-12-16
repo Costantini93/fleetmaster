@@ -97,31 +97,56 @@
       <% if (report.foto_frontale) { %>
         <div>
           <p class="font-semibold mb-2">Frontale</p>
-          <img src="<%= typeof report.foto_frontale === 'string' && report.foto_frontale.startsWith('/') ? report.foto_frontale : 'data:image/jpeg;base64,' + report.foto_frontale %>" alt="Foto Frontale" style="width: 100%; border-radius: 8px; cursor: pointer;" onclick="window.open(this.src)">
+          <% 
+            const frontaleSrc = (typeof report.foto_frontale === 'string' && (report.foto_frontale.startsWith('/') || report.foto_frontale.startsWith('data:'))) 
+              ? report.foto_frontale 
+              : 'data:image/jpeg;base64,' + report.foto_frontale;
+          %>
+          <img src="<%= frontaleSrc %>" alt="Foto Frontale" style="width: 100%; border-radius: 8px; cursor: pointer;" onclick="window.open(this.src)">
         </div>
       <% } %>
       <% if (report.foto_posteriore) { %>
         <div>
           <p class="font-semibold mb-2">Posteriore</p>
-          <img src="<%= typeof report.foto_posteriore === 'string' && report.foto_posteriore.startsWith('/') ? report.foto_posteriore : 'data:image/jpeg;base64,' + report.foto_posteriore %>" alt="Foto Posteriore" style="width: 100%; border-radius: 8px; cursor: pointer;" onclick="window.open(this.src)">
+          <% 
+            const posterioreSrc = (typeof report.foto_posteriore === 'string' && (report.foto_posteriore.startsWith('/') || report.foto_posteriore.startsWith('data:'))) 
+              ? report.foto_posteriore 
+              : 'data:image/jpeg;base64,' + report.foto_posteriore;
+          %>
+          <img src="<%= posterioreSrc %>" alt="Foto Posteriore" style="width: 100%; border-radius: 8px; cursor: pointer;" onclick="window.open(this.src)">
         </div>
       <% } %>
       <% if (report.foto_destra) { %>
         <div>
           <p class="font-semibold mb-2">Destra</p>
-          <img src="<%= typeof report.foto_destra === 'string' && report.foto_destra.startsWith('/') ? report.foto_destra : 'data:image/jpeg;base64,' + report.foto_destra %>" alt="Foto Destra" style="width: 100%; border-radius: 8px; cursor: pointer;" onclick="window.open(this.src)">
+          <% 
+            const destraSrc = (typeof report.foto_destra === 'string' && (report.foto_destra.startsWith('/') || report.foto_destra.startsWith('data:'))) 
+              ? report.foto_destra 
+              : 'data:image/jpeg;base64,' + report.foto_destra;
+          %>
+          <img src="<%= destraSrc %>" alt="Foto Destra" style="width: 100%; border-radius: 8px; cursor: pointer;" onclick="window.open(this.src)">
         </div>
       <% } %>
       <% if (report.foto_sinistra) { %>
         <div>
           <p class="font-semibold mb-2">Sinistra</p>
-          <img src="<%= typeof report.foto_sinistra === 'string' && report.foto_sinistra.startsWith('/') ? report.foto_sinistra : 'data:image/jpeg;base64,' + report.foto_sinistra %>" alt="Foto Sinistra" style="width: 100%; border-radius: 8px; cursor: pointer;" onclick="window.open(this.src)">
+          <% 
+            const sinistraSrc = (typeof report.foto_sinistra === 'string' && (report.foto_sinistra.startsWith('/') || report.foto_sinistra.startsWith('data:'))) 
+              ? report.foto_sinistra 
+              : 'data:image/jpeg;base64,' + report.foto_sinistra;
+          %>
+          <img src="<%= sinistraSrc %>" alt="Foto Sinistra" style="width: 100%; border-radius: 8px; cursor: pointer;" onclick="window.open(this.src)">
         </div>
       <% } %>
       <% if (report.foto_cruscotto) { %>
         <div>
           <p class="font-semibold mb-2">Cruscotto</p>
-          <img src="<%= typeof report.foto_cruscotto === 'string' && report.foto_cruscotto.startsWith('/') ? report.foto_cruscotto : 'data:image/jpeg;base64,' + report.foto_cruscotto %>" alt="Foto Cruscotto" style="width: 100%; border-radius: 8px; cursor: pointer;" onclick="window.open(this.src)">
+          <% 
+            const cruscottoSrc = (typeof report.foto_cruscotto === 'string' && (report.foto_cruscotto.startsWith('/') || report.foto_cruscotto.startsWith('data:'))) 
+              ? report.foto_cruscotto 
+              : 'data:image/jpeg;base64,' + report.foto_cruscotto;
+          %>
+          <img src="<%= cruscottoSrc %>" alt="Foto Cruscotto" style="width: 100%; border-radius: 8px; cursor: pointer;" onclick="window.open(this.src)">
         </div>
       <% } %>
     </div>
