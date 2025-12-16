@@ -1,57 +1,44 @@
 const { run, get } = require('../config/database');
 
-async function ensureVehiclesStato() {
-  const info = await get("SELECT sql FROM sqlite_master WHERE type='table' AND name='vehicles'");
-  if (info && info.sql && !info.sql.includes('stato')) {
-    await run("ALTER TABLE vehicles ADD COLUMN stato TEXT DEFAULT 'attivo'");
-    console.log('✓ Aggiunta colonna vehicles.stato');
+async function ensureColumn(table, column, definition, defaultValue = null) {
+  const info = await get(`SELECT sql FROM sqlite_master WHERE type='table' AND name='${table}'`);
+  if (info && info.sql && !info.sql.includes(column)) {
+    const sql = `ALTER TABLE ${table} ADD COLUMN ${column} ${definition}${defaultValue ? ` DEFAULT ${defaultValue}` : ''}`;
+    await run(sql);
+    console.log(`✓ Aggiunta colonna ${table}.${column}`);
+    return true;
   } else {
-    console.log('✓ vehicles.stato già presente');
-  }
-}
-
-async function ensureMaintenanceLetta() {
-  const info = await get("SELECT sql FROM sqlite_master WHERE type='table' AND name='maintenance_requests'");
-  if (info && info.sql && !info.sql.includes('letta')) {
-    await run("ALTER TABLE maintenance_requests ADD COLUMN letta INTEGER DEFAULT 0");
-    console.log('✓ Aggiunta colonna maintenance_requests.letta');
-  } else {
-    console.log('✓ maintenance_requests.letta già presente');
-  }
-}
-
-async function ensureDailyReportsRifornimento() {
-  const info = await get("SELECT sql FROM sqlite_master WHERE type='table' AND name='daily_reports'");
-  if (info && info.sql) {
-    if (!info.sql.includes('metodo_rifornimento')) {
-      await run("ALTER TABLE daily_reports ADD COLUMN metodo_rifornimento TEXT CHECK(metodo_rifornimento IN ('IP', 'DKV', 'Nessuno'))");
-      console.log('✓ Aggiunta colonna daily_reports.metodo_rifornimento');
-    } else {
-      console.log('✓ daily_reports.metodo_rifornimento già presente');
-    }
-    
-    if (!info.sql.includes('importo_rifornimento')) {
-      await run("ALTER TABLE daily_reports ADD COLUMN importo_rifornimento REAL");
-      console.log('✓ Aggiunta colonna daily_reports.importo_rifornimento');
-    } else {
-      console.log('✓ daily_reports.importo_rifornimento già presente');
-    }
-    
-    if (!info.sql.includes('numero_tessera_dkv')) {
-      await run("ALTER TABLE daily_reports ADD COLUMN numero_tessera_dkv TEXT");
-      console.log('✓ Aggiunta colonna daily_reports.numero_tessera_dkv');
-    } else {
-      console.log('✓ daily_reports.numero_tessera_dkv già presente');
-    }
+    console.log(`✓ ${table}.${column} già presente`);
+    return false;
   }
 }
 
 (async () => {
   try {
-    await ensureVehiclesStato();
-    await ensureMaintenanceLetta();
-    await ensureDailyReportsRifornimento();
-    console.log('✅ Migrazioni schema completate');
+    console.log('🔄 Esecuzione migrazioni complete...\n');
+    
+    // VEHICLES
+    await ensureColumn('vehicles', 'stato', 'TEXT', "'attivo'");
+    
+    // USERS
+    await ensureColumn('users', 'fixed_vehicle_id', 'INTEGER REFERENCES vehicles(id) ON DELETE SET NULL');
+    
+    // MAINTENANCE_REQUESTS
+    await ensureColumn('maintenance_requests', 'letta', 'INTEGER', '0');
+    
+    // DAILY_REPORTS
+    await ensureColumn('daily_reports', 'metodo_rifornimento', "TEXT CHECK(metodo_rifornimento IN ('IP', 'DKV', 'Nessuno'))");
+    await ensureColumn('daily_reports', 'importo_rifornimento', 'REAL');
+    await ensureColumn('daily_reports', 'numero_tessera_dkv', 'TEXT');
+    await ensureColumn('daily_reports', 'substitution_id', 'INTEGER');
+    await ensureColumn('daily_reports', 'firma', 'TEXT');
+    await ensureColumn('daily_reports', 'foto_cruscotto', 'TEXT');
+    
+    // SUBSTITUTIONS
+    await ensureColumn('substitutions', 'assignment_id', 'INTEGER');
+    await ensureColumn('substitutions', 'compilata', 'INTEGER', '0');
+    
+    console.log('\n✅ Migrazioni schema completate');
     process.exit(0);
   } catch (err) {
     console.error('❌ Errore migrazioni:', err);
