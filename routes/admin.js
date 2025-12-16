@@ -379,6 +379,41 @@ router.post('/employees/reset-password/:id', async (req, res) => {
   }
 });
 
+router.post('/employees/delete/:id', async (req, res) => {
+  try {
+    const employee = await get('SELECT * FROM users WHERE id = ?', [req.params.id]);
+
+    if (!employee) {
+      return res.json({ success: false, message: 'Dipendente non trovato' });
+    }
+
+    // Impedisci eliminazione dell'utente corrente
+    if (employee.id === req.user.id) {
+      return res.json({ success: false, message: 'Non puoi eliminare il tuo account' });
+    }
+
+    // Elimina dipendente
+    await run('DELETE FROM users WHERE id = ?', [req.params.id]);
+
+    // Log attività
+    await logActivity(
+      req.user.id,
+      req.user.username,
+      'ELIMINA_DIPENDENTE',
+      `Eliminato dipendente: ${employee.nome} ${employee.cognome} (${employee.username})`
+    );
+
+    res.json({ 
+      success: true, 
+      message: 'Dipendente eliminato con successo'
+    });
+
+  } catch (error) {
+    console.error('Errore eliminazione dipendente:', error);
+    res.json({ success: false, message: 'Errore durante l\'eliminazione del dipendente' });
+  }
+});
+
 // ==================== GESTIONE VEICOLI ====================
 router.get('/vehicles', async (req, res) => {
   try {

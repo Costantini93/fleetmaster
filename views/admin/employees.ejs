@@ -61,6 +61,9 @@
                   <button onclick="resetPassword(<%= employee.id %>)" class="btn-icon" title="Reset Password">
                     <i class="fas fa-key"></i>
                   </button>
+                  <button onclick="deleteEmployee(<%= employee.id %>, '<%= employee.nome %> <%= employee.cognome %>')" class="btn-icon" title="Elimina">
+                    <i class="fas fa-trash"></i>
+                  </button>
                 </div>
               </td>
             </tr>
@@ -84,6 +87,23 @@ async function toggleEmployee(id, currentStatus) {
       window.location.reload();
     } else {
       alert(data.message || 'Errore durante l\'operazione');
+    }
+  } catch (error) {
+    alert('Errore di connessione');
+  }
+}
+
+async function deleteEmployee(id, name) {
+  if (!confirm(`Sei sicuro di voler eliminare ${name}?\n\nQuesta azione è irreversibile e eliminerà tutti i dati associati.`)) return;
+
+  try {
+    const response = await fetch(`/admin/employees/delete/${id}`, { method: 'POST' });
+    const data = await response.json();
+    
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert(data.message || 'Errore durante l\'eliminazione');
     }
   } catch (error) {
     alert('Errore di connessione');
