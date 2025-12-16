@@ -37,6 +37,7 @@ async function ensureColumn(table, column, definition, defaultValue = null) {
     // SUBSTITUTIONS
     await ensureColumn('substitutions', 'assignment_id', 'INTEGER');
     await ensureColumn('substitutions', 'vehicle_originale_id', 'INTEGER REFERENCES vehicles(id)');
+    await ensureColumn('substitutions', 'vehicle_sostituto_id', 'INTEGER REFERENCES vehicles(id)');
     await ensureColumn('substitutions', 'compilata', 'INTEGER', '0');
     
     console.log('\n✅ Migrazioni schema completate');
