@@ -191,31 +191,41 @@ document.querySelectorAll('input[type="file"]').forEach(input => {
 
 document.querySelector('#departureForm').addEventListener('submit', async function(e) {
   e.preventDefault();
-  console.log('🚀 Form submit iniziato');
+  
+  // Debug visibile
+  let debugInfo = '🚀 Form submit iniziato\n\n';
   
   const sigData = signaturePad.getDataURL();
-  console.log('✍️ Firma presente:', sigData ? 'SI' : 'NO');
+  debugInfo += '✍️ Firma: ' + (sigData && sigData.length > 100 ? 'OK' : 'MANCANTE') + '\n\n';
   
   if (!sigData || sigData === 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==') {
-    alert('Inserisci la firma prima di continuare');
+    alert('❌ Inserisci la firma prima di continuare');
     return;
   }
   
   // Verifica che tutte le foto siano state caricate
   const fotoFields = ['foto_frontale', 'foto_posteriore', 'foto_destra', 'foto_sinistra', 'foto_cruscotto'];
-  console.log('📸 Controllo foto...');
+  debugInfo += '📸 Foto:\n';
   
+  let missingPhotos = [];
   for (const field of fotoFields) {
     const value = document.getElementById(field + '_base64').value;
-    console.log(`${field}: ${value ? 'OK (' + (value.length/1024).toFixed(0) + 'KB)' : 'MANCANTE'}`);
+    const name = field.replace('foto_', '').replace('_', ' ');
     
-    if (!value) {
-      alert(`Carica la foto: ${field.replace('foto_', '').replace('_', ' ')}`);
-      return;
+    if (value) {
+      debugInfo += `✅ ${name}: ${(value.length/1024).toFixed(0)}KB\n`;
+    } else {
+      debugInfo += `❌ ${name}: MANCANTE\n`;
+      missingPhotos.push(name);
     }
   }
   
-  console.log('✅ Tutte le foto presenti, preparazione dati...');
+  if (missingPhotos.length > 0) {
+    alert(debugInfo + '\n⚠️ Mancano foto: ' + missingPhotos.join(', '));
+    return;
+  }
+  
+  debugInfo += '\n✅ Tutte le foto presenti!';
   
   // Prepara i dati
   const formData = {
