@@ -55,7 +55,7 @@ router.post('/login', async (req, res) => {
     res.cookie('token', token, {
       httpOnly: true,
       secure: true,
-      sameSite: 'Lax',
+      sameSite: 'None',
       path: '/',
       maxAge: 86400000 // 24 ore
     });
@@ -136,7 +136,7 @@ router.post('/change-password', isAuthenticated, async (req, res) => {
     res.cookie('token', token, {
       httpOnly: true,
       secure: true,
-      sameSite: 'Lax',
+      sameSite: 'None',
       path: '/',
       maxAge: 86400000 // 24 ore
     });
