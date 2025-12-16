@@ -154,37 +154,8 @@ router.get('/reports/departure', (req, res) => {
   res.redirect('/rider/reports/new');
 });
 
-// Wrapper per gestire errori di Multer
-const handleUpload = (req, res, next) => {
-  const uploadMiddleware = upload.fields([
-    { name: 'foto_frontale', maxCount: 1 },
-    { name: 'foto_posteriore', maxCount: 1 },
-    { name: 'foto_destra', maxCount: 1 },
-    { name: 'foto_sinistra', maxCount: 1 },
-    { name: 'foto_cruscotto', maxCount: 1 }
-  ]);
-  
-  uploadMiddleware(req, res, (err) => {
-    if (err) {
-      console.error('Errore upload Multer:', err);
-      if (err instanceof multer.MulterError) {
-        if (err.code === 'LIMIT_FILE_SIZE') {
-          req.flash('error_msg', 'File troppo grande. Max 10MB per foto.');
-        } else if (err.code === 'LIMIT_FILE_COUNT') {
-          req.flash('error_msg', 'Troppi file caricati.');
-        } else {
-          req.flash('error_msg', `Errore upload: ${err.message}`);
-        }
-      } else {
-        req.flash('error_msg', err.message || 'Errore durante upload foto');
-      }
-      return res.redirect('/rider/reports/new');
-    }
-    next();
-  });
-};
-
-router.post('/reports/departure', handleUpload, async (req, res) => {
+// NUOVO: Endpoint JSON per bypassare WAF Vercel con multipart/form-data
+router.post('/reports/departure', async (req, res) => {
   try {
     const userId = req.user.id;
     const {
@@ -194,7 +165,12 @@ router.post('/reports/departure', handleUpload, async (req, res) => {
       ora_partenza,
       numero_ditta,
       pacchi_ritirati,
-      firma_partenza
+      firma_partenza,
+      foto_frontale,
+      foto_posteriore,
+      foto_destra,
+      foto_sinistra,
+      foto_cruscotto
     } = req.body;
 
     const today = new Date().toISOString().split('T')[0];
@@ -221,22 +197,22 @@ router.post('/reports/departure', handleUpload, async (req, res) => {
       });
     }
 
-    // Salva foto come base64 (temporaneo per Vercel serverless)
+    // Le foto arrivano già come base64 dal client (bypassando multipart/form-data e WAF Vercel)
     const photos = {
-      foto_frontale: req.files['foto_frontale'] ? req.files['foto_frontale'][0].buffer.toString('base64') : null,
-      foto_posteriore: req.files['foto_posteriore'] ? req.files['foto_posteriore'][0].buffer.toString('base64') : null,
-      foto_destra: req.files['foto_destra'] ? req.files['foto_destra'][0].buffer.toString('base64') : null,
-      foto_sinistra: req.files['foto_sinistra'] ? req.files['foto_sinistra'][0].buffer.toString('base64') : null,
-      foto_cruscotto: req.files['foto_cruscotto'] ? req.files['foto_cruscotto'][0].buffer.toString('base64') : null
+      foto_frontale,
+      foto_posteriore,
+      foto_destra,
+      foto_sinistra,
+      foto_cruscotto
     };
 
     // Debug: verifica lunghezza foto
-    console.log('📸 Foto caricate:', {
-      frontale: photos.foto_frontale ? `${Math.round(photos.foto_frontale.length / 1024)}KB` : 'mancante',
-      posteriore: photos.foto_posteriore ? `${Math.round(photos.foto_posteriore.length / 1024)}KB` : 'mancante',
-      destra: photos.foto_destra ? `${Math.round(photos.foto_destra.length / 1024)}KB` : 'mancante',
-      sinistra: photos.foto_sinistra ? `${Math.round(photos.foto_sinistra.length / 1024)}KB` : 'mancante',
-      cruscotto: photos.foto_cruscotto ? `${Math.round(photos.foto_cruscotto.length / 1024)}KB` : 'mancante'
+    console.log('📸 Foto ricevute (JSON):', {
+      frontale: foto_frontale ? `${Math.round(foto_frontale.length / 1024)}KB` : 'mancante',
+      posteriore: foto_posteriore ? `${Math.round(foto_posteriore.length / 1024)}KB` : 'mancante',
+      destra: foto_destra ? `${Math.round(foto_destra.length / 1024)}KB` : 'mancante',
+      sinistra: foto_sinistra ? `${Math.round(foto_sinistra.length / 1024)}KB` : 'mancante',
+      cruscotto: foto_cruscotto ? `${Math.round(foto_cruscotto.length / 1024)}KB` : 'mancante'
     });
 
     // Formatta ora partenza per il database
@@ -252,7 +228,7 @@ router.post('/reports/departure', handleUpload, async (req, res) => {
       [
         userId, vehicle_id, today, codice_giro, km_partenza, ora_partenza_db, numero_ditta,
         pacchi_ritirati || 0, firma_partenza,
-        photos.foto_frontale, photos.foto_posteriore, photos.foto_destra, photos.foto_sinistra, photos.foto_cruscotto,
+        foto_frontale, foto_posteriore, foto_destra, foto_sinistra, foto_cruscotto,
         'partito'
       ]
     );
@@ -265,13 +241,12 @@ router.post('/reports/departure', handleUpload, async (req, res) => {
       `Rapporto partenza per veicolo ${vehicle_id}`
     );
 
-    req.flash('success_msg', 'Rapporto di partenza registrato con successo!');
-    res.redirect('/rider/dashboard');
+    // Rispondi con JSON per fetch API
+    res.json({ success: true, message: 'Rapporto registrato con successo' });
 
   } catch (error) {
     console.error('Errore rapporto partenza:', error);
-    req.flash('error_msg', 'Errore durante la registrazione del rapporto');
-    res.redirect('/rider/reports/new');
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 

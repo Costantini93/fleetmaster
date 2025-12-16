@@ -15,9 +15,14 @@
     </div>
   </div>
 
-  <form action="/rider/reports/departure" method="POST" enctype="multipart/form-data">
+  <form id="departureForm">
     <input type="hidden" name="vehicle_id" value="<%= assignment.vehicle_id %>">
     <input type="hidden" name="firma_partenza" id="firma_partenza">
+    <input type="hidden" id="foto_frontale_base64">
+    <input type="hidden" id="foto_posteriore_base64">
+    <input type="hidden" id="foto_destra_base64">
+    <input type="hidden" id="foto_sinistra_base64">
+    <input type="hidden" id="foto_cruscotto_base64">
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
       <div class="form-group">
@@ -152,7 +157,7 @@ async function compressImage(file, maxWidth = 800, quality = 0.5) {
   });
 }
 
-// Comprimi immagini quando vengono selezionate
+// Comprimi immagini quando vengono selezionate e salva in base64
 document.querySelectorAll('input[type="file"]').forEach(input => {
   input.addEventListener('change', async function(e) {
     if (this.files && this.files[0]) {
@@ -163,10 +168,15 @@ document.querySelectorAll('input[type="file"]').forEach(input => {
       const compressed = await compressImage(file);
       console.log(`📸 File compresso: ${(compressed.size / 1024).toFixed(0)}KB`);
       
-      // Sostituisci il file nell'input
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(compressed);
-      this.files = dataTransfer.files;
+      // Converti in base64
+      const reader = new FileReader();
+      reader.readAsDataURL(compressed);
+      reader.onload = () => {
+        const base64 = reader.result.split(',')[1]; // Rimuovi il prefisso data:image/jpeg;base64,
+        const fieldName = this.name;
+        document.getElementById(fieldName + '_base64').value = base64;
+        console.log(`✅ ${fieldName}: ${(base64.length / 1024).toFixed(0)}KB salvato`);
+      };
       
       // Mostra anteprima
       const previewId = this.getAttribute('data-preview');
@@ -179,36 +189,76 @@ document.querySelectorAll('input[type="file"]').forEach(input => {
   });
 });
 
-document.querySelector('form').addEventListener('submit', function(e) {
+document.querySelector('#departureForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
   const sigData = signaturePad.getDataURL();
   if (!sigData || sigData === 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==') {
-    e.preventDefault();
     alert('Inserisci la firma prima di continuare');
     return;
   }
-  document.getElementById('firma_partenza').value = sigData;
   
-  // Calcola dimensione totale payload
-  const formData = new FormData(this);
-  let totalSize = 0;
-  for (let [key, value] of formData.entries()) {
-    if (value instanceof File) {
-      totalSize += value.size;
+  // Verifica che tutte le foto siano state caricate
+  const fotoFields = ['foto_frontale', 'foto_posteriore', 'foto_destra', 'foto_sinistra', 'foto_cruscotto'];
+  for (const field of fotoFields) {
+    if (!document.getElementById(field + '_base64').value) {
+      alert(`Carica la foto: ${field.replace('foto_', '').replace('_', ' ')}`);
+      return;
     }
   }
-  totalSize += sigData.length;
   
-  console.log(`📦 Dimensione totale payload: ${(totalSize / 1024 / 1024).toFixed(2)}MB`);
+  // Prepara i dati
+  const formData = {
+    vehicle_id: document.querySelector('[name="vehicle_id"]').value,
+    codice_giro: document.querySelector('[name="codice_giro"]').value,
+    ora_partenza: document.querySelector('[name="ora_partenza"]').value,
+    km_partenza: document.querySelector('[name="km_partenza"]').value,
+    numero_ditta: document.querySelector('[name="numero_ditta"]').value,
+    pacchi_ritirati: document.querySelector('[name="pacchi_ritirati"]').value,
+    firma_partenza: sigData.split(',')[1], // Solo la parte base64
+    foto_frontale: document.getElementById('foto_frontale_base64').value,
+    foto_posteriore: document.getElementById('foto_posteriore_base64').value,
+    foto_destra: document.getElementById('foto_destra_base64').value,
+    foto_sinistra: document.getElementById('foto_sinistra_base64').value,
+    foto_cruscotto: document.getElementById('foto_cruscotto_base64').value
+  };
   
-  if (totalSize > 3000000) { // 3MB (molto sotto il limite Vercel di 4.5MB)
-    e.preventDefault();
-    alert('⚠️ Foto troppo grandi. Limite: 3MB totali. Dimensione attuale: ' + (totalSize / 1024 / 1024).toFixed(2) + 'MB. Riprova.');
+  // Calcola dimensione totale
+  const totalSize = JSON.stringify(formData).length;
+  console.log(`📦 Dimensione totale JSON: ${(totalSize / 1024 / 1024).toFixed(2)}MB`);
+  
+  if (totalSize > 3000000) {
+    alert('⚠️ Foto troppo grandi. Dimensione: ' + (totalSize / 1024 / 1024).toFixed(2) + 'MB. Riprova.');
     return;
   }
   
-  // Mostra loader durante invio
+  // Mostra loader
   const submitBtn = this.querySelector('button[type="submit"]');
   submitBtn.disabled = true;
   submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Invio in corso...';
+  
+  try {
+    const response = await fetch('/rider/reports/departure', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(formData)
+    });
+    
+    if (response.ok) {
+      window.location.href = '/rider/dashboard';
+    } else {
+      const error = await response.text();
+      alert('Errore: ' + error);
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Registra Partenza';
+    }
+  } catch (error) {
+    console.error('Errore:', error);
+    alert('Errore durante l\'invio: ' + error.message);
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Registra Partenza';
+  }
 });
 </script>
