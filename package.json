@@ -1,6 +1,6 @@
 {
   "name": "gestionale-furgoni-robi",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Sistema completo di gestione flotta veicoli con PWA",
   "main": "server.js",
   "scripts": {
