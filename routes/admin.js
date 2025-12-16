@@ -185,29 +185,30 @@ router.get('/employees/new', (req, res) => {
 });
 
 router.post('/employees/new', async (req, res) => {
-  const { nome, cognome, username, password, telefono, ruolo } = req.body;
+  const { nome, cognome, email, password, telefono, ruolo } = req.body;
+  const username = email; // Email viene usata come username
 
   try {
     // Validazione
-    if (!nome || !cognome || !username || !password || !ruolo) {
+    if (!nome || !cognome || !email || !password || !ruolo) {
       req.flash('error_msg', 'Tutti i campi obbligatori devono essere compilati');
       return res.render('admin/employee-form', {
         title: 'Nuovo Dipendente - ROBI Fleet',
         employee: null,
         action: 'create',
-        formData: { nome, cognome, username, telefono, ruolo }
+        formData: { nome, cognome, email, telefono, ruolo }
       });
     }
 
-    // Verifica username univoco
+    // Verifica email univoca
     const existing = await get('SELECT id FROM users WHERE username = ?', [username]);
     if (existing) {
-      req.flash('error_msg', 'Username già esistente');
+      req.flash('error_msg', 'Email già esistente nel sistema');
       return res.render('admin/employee-form', {
         title: 'Nuovo Dipendente - ROBI Fleet',
         employee: null,
         action: 'create',
-        formData: { nome, cognome, username, telefono, ruolo }
+        formData: { nome, cognome, email, telefono, ruolo }
       });
     }
 
@@ -226,7 +227,7 @@ router.post('/employees/new', async (req, res) => {
       req.user.id,
       req.user.username,
       'CREA_DIPENDENTE',
-      `Creato dipendente: ${nome} ${cognome} (${username})`
+      `Creato dipendente: ${nome} ${cognome} (${email})`
     );
 
     req.flash('success_msg', 'Dipendente creato con successo!');

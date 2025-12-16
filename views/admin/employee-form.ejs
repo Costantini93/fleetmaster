@@ -17,9 +17,9 @@
     </div>
 
     <div class="form-group">
-      <label class="form-label">Username *</label>
-      <input type="text" name="username" class="form-input" value="<%= employee ? employee.username : ((typeof formData !== 'undefined' && formData.username) ? formData.username : '') %>" required>
-      <p class="form-help">Deve essere univoco nel sistema</p>
+      <label class="form-label">Email *</label>
+      <input type="email" name="email" class="form-input" value="<%= employee ? employee.username : ((typeof formData !== 'undefined' && formData.email) ? formData.email : '') %>" required>
+      <p class="form-help">Verrà utilizzata come username per il login</p>
     </div>
 
     <% if (action === 'create') { %>
