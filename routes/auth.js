@@ -54,7 +54,7 @@ router.post('/login', async (req, res) => {
     // Imposta cookie con JWT
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true,
       sameSite: 'Lax',
       path: '/',
       maxAge: 86400000 // 24 ore
@@ -65,15 +65,12 @@ router.post('/login', async (req, res) => {
 
     // Reindirizza in base al ruolo e primo accesso
     if (user.primo_accesso === 1) {
-      req.flash('error_msg', 'Devi cambiare la password prima di continuare');
       return res.redirect('/change-password');
     }
 
     if (user.ruolo === 'admin') {
-      req.flash('success_msg', `Benvenuto ${user.nome}!`);
       return res.redirect('/admin/dashboard');
     } else {
-      req.flash('success_msg', `Benvenuto ${user.nome}!`);
       return res.redirect('/rider/dashboard');
     }
 
