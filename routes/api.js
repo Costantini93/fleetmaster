@@ -51,7 +51,7 @@ router.get('/riders/available', isAuthenticated, async (req, res) => {
 // API per ottenere statistiche dashboard
 router.get('/stats/dashboard', isAuthenticated, async (req, res) => {
   try {
-    if (req.session.user.ruolo !== 'admin') {
+    if (req.user.ruolo !== 'admin') {
       return res.status(403).json({ success: false, message: 'Non autorizzato' });
     }
 
@@ -96,7 +96,7 @@ router.get('/stats/dashboard', isAuthenticated, async (req, res) => {
 // API per esportare rapporti (CSV)
 router.get('/reports/export', isAuthenticated, async (req, res) => {
   try {
-    if (req.session.user.ruolo !== 'admin') {
+    if (req.user.ruolo !== 'admin') {
       return res.status(403).json({ success: false, message: 'Non autorizzato' });
     }
 
@@ -158,7 +158,7 @@ router.get('/reports/export', isAuthenticated, async (req, res) => {
 // API per verificare disponibilità username
 router.post('/check-username', isAuthenticated, async (req, res) => {
   try {
-    if (req.session.user.ruolo !== 'admin') {
+    if (req.user.ruolo !== 'admin') {
       return res.status(403).json({ success: false, message: 'Non autorizzato' });
     }
 
@@ -188,7 +188,7 @@ router.post('/check-username', isAuthenticated, async (req, res) => {
 // API per verificare disponibilità targa
 router.post('/check-plate', isAuthenticated, async (req, res) => {
   try {
-    if (req.session.user.ruolo !== 'admin') {
+    if (req.user.ruolo !== 'admin') {
       return res.status(403).json({ success: false, message: 'Non autorizzato' });
     }
 

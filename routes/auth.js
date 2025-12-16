@@ -135,7 +135,7 @@ router.post('/change-password', isAuthenticated, async (req, res) => {
 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true,
       sameSite: 'Lax',
       path: '/',
       maxAge: 86400000 // 24 ore
@@ -143,8 +143,6 @@ router.post('/change-password', isAuthenticated, async (req, res) => {
 
     // Log attività
     await logActivity(userId, req.user.username, 'CAMBIO_PASSWORD', 'Password modificata con successo');
-
-    req.flash('success_msg', 'Password cambiata con successo!');
     
     // Reindirizza in base al ruolo
     if (req.user.ruolo === 'admin') {

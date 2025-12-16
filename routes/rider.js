@@ -47,7 +47,7 @@ router.use(checkFirstLogin);
 // ==================== DASHBOARD RIDER ====================
 router.get('/dashboard', async (req, res) => {
   try {
-    const userId = req.session.user.id;
+    const userId = req.user.id;
     const today = new Date().toISOString().split('T')[0];
 
     // Rapporti di oggi dell'utente
@@ -131,7 +131,7 @@ router.get('/dashboard', async (req, res) => {
 // ==================== NUOVO RAPPORTO - PARTENZA ====================
 router.get('/reports/new', async (req, res) => {
   try {
-    const userId = req.session.user.id;
+    const userId = req.user.id;
     const today = new Date().toISOString().split('T')[0];
 
     // Veicolo assegnato oggi
@@ -169,7 +169,7 @@ router.post('/reports/departure', upload.fields([
   { name: 'foto_cruscotto', maxCount: 1 }
 ]), async (req, res) => {
   try {
-    const userId = req.session.user.id;
+    const userId = req.user.id;
     const {
       vehicle_id,
       codice_giro,
@@ -234,7 +234,7 @@ router.post('/reports/departure', upload.fields([
     // Log attività
     await logActivity(
       userId,
-      req.session.user.username,
+      req.user.username,
       'RAPPORTO_PARTENZA',
       `Rapporto partenza per veicolo ${vehicle_id}`
     );
@@ -252,7 +252,7 @@ router.post('/reports/departure', upload.fields([
 // ==================== RITORNO ====================
 router.get('/reports/:id/return', async (req, res) => {
   try {
-    const userId = req.session.user.id;
+    const userId = req.user.id;
 
     const report = await get(
       `SELECT dr.*, v.targa, v.modello
@@ -281,7 +281,7 @@ router.get('/reports/:id/return', async (req, res) => {
 
 router.post('/reports/:id/return', async (req, res) => {
   try {
-    const userId = req.session.user.id;
+    const userId = req.user.id;
     const { km_arrivo, ora_rientro, metodo_rifornimento, importo_rifornimento, numero_tessera_dkv } = req.body;
 
     // Verifica rapporto
@@ -337,7 +337,7 @@ router.post('/reports/:id/return', async (req, res) => {
     // Log attività
     await logActivity(
       userId,
-      req.session.user.username,
+      req.user.username,
       'RAPPORTO_RITORNO',
       `Rapporto completato per veicolo ${report.vehicle_id}, distanza: ${distanza} km`
     );
@@ -355,7 +355,7 @@ router.post('/reports/:id/return', async (req, res) => {
 // ==================== STORICO RAPPORTI ====================
 router.get('/reports/history', async (req, res) => {
   try {
-    const userId = req.session.user.id;
+    const userId = req.user.id;
     const page = parseInt(req.query.page) || 1;
     const limit = 20;
     const offset = (page - 1) * limit;
@@ -396,7 +396,7 @@ router.get('/reports/history', async (req, res) => {
 // ==================== SEGNALAZIONI MANUTENZIONE ====================
 router.get('/maintenance/new', async (req, res) => {
   try {
-    const userId = req.session.user.id;
+    const userId = req.user.id;
     const today = new Date().toISOString().split('T')[0];
 
     // Solo veicolo assegnato oggi
@@ -427,7 +427,7 @@ router.get('/maintenance/new', async (req, res) => {
 
 router.post('/maintenance/new', async (req, res) => {
   try {
-    const userId = req.session.user.id;
+    const userId = req.user.id;
     const today = new Date().toISOString().split('T')[0];
     const { descrizione, priorita } = req.body;
 
@@ -473,7 +473,7 @@ router.post('/maintenance/new', async (req, res) => {
     // Log attività
     await logActivity(
       userId,
-      req.session.user.username,
+      req.user.username,
       'SEGNALAZIONE_MANUTENZIONE',
       `Segnalazione per veicolo ${vehicle_id}, priorità: ${detectedPriority}`
     );
@@ -491,7 +491,7 @@ router.post('/maintenance/new', async (req, res) => {
 // ==================== STORICO MANUTENZIONI ====================
 router.get('/maintenance/history', async (req, res) => {
   try {
-    const userId = req.session.user.id;
+    const userId = req.user.id;
 
     const requests = await all(
       `SELECT mr.*, v.targa, v.modello
@@ -604,7 +604,7 @@ router.get('/maintenance-history', async (req, res) => {
 // ==================== MODULO SOSTITUZIONE VEICOLO ====================
 router.get('/reports/substitution', async (req, res) => {
   try {
-    const userId = req.session.user.id;
+    const userId = req.user.id;
     const today = new Date().toISOString().split('T')[0];
 
     // Ottieni l'assignment di oggi
@@ -657,7 +657,7 @@ router.post('/reports/substitution', upload.fields([
   { name: 'foto_cruscotto', maxCount: 1 }
 ]), async (req, res) => {
   try {
-    const userId = req.session.user.id;
+    const userId = req.user.id;
     const today = new Date().toISOString().split('T')[0];
     const { substitution_id, km_partenza, ora_partenza, codice_giro, numero_ditta, firma } = req.body;
 

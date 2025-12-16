@@ -140,8 +140,8 @@ router.post('/maintenance/:id/update-status', async (req, res) => {
     }
 
     await logActivity(
-      req.session.user.id,
-      req.session.user.username,
+      req.user.id,
+      req.user.username,
       'AGGIORNA_MANUTENZIONE',
       `Richiesta manutenzione ID ${req.params.id} aggiornata a: ${stato}`
     );
@@ -273,8 +273,8 @@ router.post('/reports/:id/reassign', async (req, res) => {
     );
 
     await logActivity(
-      req.session.user.id,
-      req.session.user.username,
+      req.user.id,
+      req.user.username,
       'RIASSEGNA_VEICOLO',
       `Rapporto ID ${req.params.id} riassegnato a veicolo ${vehicle_id}`
     );
@@ -299,8 +299,8 @@ router.post('/reports/delete-multiple', async (req, res) => {
     await run(`DELETE FROM daily_reports WHERE id IN (${placeholders})`, report_ids);
 
     await logActivity(
-      req.session.user.id,
-      req.session.user.username,
+      req.user.id,
+      req.user.username,
       'ELIMINA_RAPPORTI_MULTIPLI',
       `${report_ids.length} rapporti eliminati`
     );
@@ -321,8 +321,8 @@ router.post('/reports/:id/delete', async (req, res) => {
     await run('DELETE FROM daily_reports WHERE id = ?', [req.params.id]);
 
     await logActivity(
-      req.session.user.id,
-      req.session.user.username,
+      req.user.id,
+      req.user.username,
       'ELIMINA_RAPPORTO',
       `Rapporto ID ${req.params.id} eliminato`
     );
@@ -499,8 +499,8 @@ router.post('/substitutions', async (req, res) => {
     );
 
     await logActivity(
-      req.session.user.id,
-      req.session.user.username,
+      req.user.id,
+      req.user.username,
       'SOSTITUZIONE_VEICOLO',
       `Veicolo sostituito per assignment ${assignment_id}: da ${assignment.vehicle_id} a ${vehicle_sostituto_id}`
     );

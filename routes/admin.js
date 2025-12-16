@@ -223,8 +223,8 @@ router.post('/employees/new', async (req, res) => {
 
     // Log attività
     await logActivity(
-      req.session.user.id,
-      req.session.user.username,
+      req.user.id,
+      req.user.username,
       'CREA_DIPENDENTE',
       `Creato dipendente: ${nome} ${cognome} (${username})`
     );
@@ -292,8 +292,8 @@ router.post('/employees/edit/:id', async (req, res) => {
 
     // Log attività
     await logActivity(
-      req.session.user.id,
-      req.session.user.username,
+      req.user.id,
+      req.user.username,
       'MODIFICA_DIPENDENTE',
       `Modificato dipendente: ${nome} ${cognome} (${username})`
     );
@@ -323,8 +323,8 @@ router.post('/employees/toggle/:id', async (req, res) => {
 
     // Log attività
     await logActivity(
-      req.session.user.id,
-      req.session.user.username,
+      req.user.id,
+      req.user.username,
       'TOGGLE_DIPENDENTE',
       `${newStatus === 1 ? 'Attivato' : 'Disattivato'} dipendente: ${employee.nome} ${employee.cognome}`
     );
@@ -360,8 +360,8 @@ router.post('/employees/reset-password/:id', async (req, res) => {
 
     // Log attività
     await logActivity(
-      req.session.user.id,
-      req.session.user.username,
+      req.user.id,
+      req.user.username,
       'RESET_PASSWORD',
       `Reset password per: ${employee.nome} ${employee.cognome}`
     );
@@ -435,8 +435,8 @@ router.post('/vehicles/new', async (req, res) => {
 
     // Log attività
     await logActivity(
-      req.session.user.id,
-      req.session.user.username,
+      req.user.id,
+      req.user.username,
       'CREA_VEICOLO',
       `Creato veicolo: ${targa.toUpperCase()} - ${modello}`
     );
@@ -499,8 +499,8 @@ router.post('/vehicles/edit/:id', async (req, res) => {
 
     // Log attività
     await logActivity(
-      req.session.user.id,
-      req.session.user.username,
+      req.user.id,
+      req.user.username,
       'MODIFICA_VEICOLO',
       `Modificato veicolo: ${targa.toUpperCase()} - ${modello}`
     );
@@ -527,8 +527,8 @@ router.post('/vehicles/delete/:id', async (req, res) => {
 
     // Log attività
     await logActivity(
-      req.session.user.id,
-      req.session.user.username,
+      req.user.id,
+      req.user.username,
       'ELIMINA_VEICOLO',
       `Eliminato veicolo: ${vehicle.targa} - ${vehicle.modello}`
     );
@@ -571,7 +571,7 @@ router.get('/roster', async (req, res) => {
 
     res.render('admin/roster', {
       title: 'Roster - Gestione Turni',
-      user: req.session.user,
+      user: req.user,
       currentPage: 'roster',
       activeDrivers: drivers || [],
       selectedDrivers: selectedDriverIds,
@@ -611,8 +611,8 @@ router.post('/roster/save', async (req, res) => {
 
     // Log attività
     await logActivity(
-      req.session.user.id,
-      req.session.user.username,
+      req.user.id,
+      req.user.username,
       'SALVA_ROSTER',
       `Salvato roster per ${new Date(rosterDate + 'T12:00:00').toLocaleDateString('it-IT')}: ${driverIds.length} driver`
     );
@@ -636,8 +636,8 @@ router.post('/roster/reset', async (req, res) => {
 
     // Log attività
     await logActivity(
-      req.session.user.id,
-      req.session.user.username,
+      req.user.id,
+      req.user.username,
       'RESET_ROSTER',
       `Roster resettato per ${new Date(rosterDate + 'T12:00:00').toLocaleDateString('it-IT')}`
     );
@@ -788,8 +788,8 @@ router.post('/assignments/auto-assign', async (req, res) => {
 
           // Log attività
           await logActivity(
-            req.session.user.id,
-            req.session.user.username,
+            req.user.id,
+            req.user.username,
             'ASSEGNAZIONE_AUTO',
             `${targa} → ${driver.nome} ${driver.cognome} per ${dateFormatted} (turno ${turno})`
           );

@@ -46,8 +46,8 @@ router.post('/vehicles/:id/contracts', async (req, res) => {
     );
 
     await logActivity(
-      req.session.user.id,
-      req.session.user.username,
+      req.user.id,
+      req.user.username,
       'CREA_CONTRATTO',
       `Contratto noleggio aggiunto per veicolo ID ${req.params.id}`
     );
@@ -73,8 +73,8 @@ router.post('/contracts/:id/delete', async (req, res) => {
     await run('DELETE FROM rental_contracts WHERE id = ?', [req.params.id]);
 
     await logActivity(
-      req.session.user.id,
-      req.session.user.username,
+      req.user.id,
+      req.user.username,
       'ELIMINA_CONTRATTO',
       `Contratto ID ${req.params.id} eliminato`
     );
@@ -129,8 +129,8 @@ router.post('/vehicles/:id/maintenance-schedule', async (req, res) => {
     );
 
     await logActivity(
-      req.session.user.id,
-      req.session.user.username,
+      req.user.id,
+      req.user.username,
       'CREA_SCADENZA_MANUTENZIONE',
       `Scadenza manutenzione aggiunta per veicolo ID ${req.params.id}`
     );
@@ -165,8 +165,8 @@ router.post('/maintenance-schedule/:id/update', async (req, res) => {
     );
 
     await logActivity(
-      req.session.user.id,
-      req.session.user.username,
+      req.user.id,
+      req.user.username,
       'AGGIORNA_MANUTENZIONE',
       `Scadenza manutenzione ID ${req.params.id} aggiornata`
     );
@@ -184,8 +184,8 @@ router.post('/maintenance-schedule/:id/delete', async (req, res) => {
     await run('DELETE FROM maintenance_schedules WHERE id = ?', [req.params.id]);
 
     await logActivity(
-      req.session.user.id,
-      req.session.user.username,
+      req.user.id,
+      req.user.username,
       'ELIMINA_SCADENZA_MANUTENZIONE',
       `Scadenza manutenzione ID ${req.params.id} eliminata`
     );
@@ -330,8 +330,8 @@ router.post('/roster', async (req, res) => {
     );
 
     await logActivity(
-      req.session.user.id,
-      req.session.user.username,
+      req.user.id,
+      req.user.username,
       'CREA_TURNO',
       `Turno aggiunto: data ${data}, turno ${turno}`
     );
@@ -349,8 +349,8 @@ router.post('/roster/:id/delete', async (req, res) => {
     await run('DELETE FROM roster WHERE id = ?', [req.params.id]);
 
     await logActivity(
-      req.session.user.id,
-      req.session.user.username,
+      req.user.id,
+      req.user.username,
       'ELIMINA_TURNO',
       `Turno ID ${req.params.id} eliminato`
     );
@@ -471,8 +471,8 @@ router.post('/assignments', async (req, res) => {
     );
 
     await logActivity(
-      req.session.user.id,
-      req.session.user.username,
+      req.user.id,
+      req.user.username,
       'CREA_ASSEGNAZIONE',
       `Veicolo ${vehicle_id} assegnato a rider ${user_id} per ${data}`
     );
@@ -490,8 +490,8 @@ router.post('/assignments/:id/delete', async (req, res) => {
     await run('DELETE FROM assignments WHERE id = ?', [req.params.id]);
 
     await logActivity(
-      req.session.user.id,
-      req.session.user.username,
+      req.user.id,
+      req.user.username,
       'ELIMINA_ASSEGNAZIONE',
       `Assegnazione ID ${req.params.id} eliminata`
     );
@@ -517,8 +517,8 @@ router.post('/assignments/delete-multiple', async (req, res) => {
     await run(`DELETE FROM assignments WHERE id IN (${placeholders})`, assignment_ids);
 
     await logActivity(
-      req.session.user.id,
-      req.session.user.username,
+      req.user.id,
+      req.user.username,
       'ELIMINA_ASSEGNAZIONI_MULTIPLE',
       `${assignment_ids.length} assegnazioni eliminate`
     );
