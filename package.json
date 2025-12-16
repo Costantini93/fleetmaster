@@ -7,6 +7,7 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "init-db": "node scripts/initDatabase.js",
+    "migrate": "node scripts/run-migrations.js",
     "populate-demo": "node scripts/populateSampleData.js",
     "check": "node scripts/preflight-check.js"
   },
