@@ -204,6 +204,15 @@ router.post('/reports/departure', upload.fields([
       foto_cruscotto: req.files['foto_cruscotto'] ? req.files['foto_cruscotto'][0].buffer.toString('base64') : null
     };
 
+    // Debug: verifica lunghezza foto
+    console.log('📸 Foto caricate:', {
+      frontale: photos.foto_frontale ? `${Math.round(photos.foto_frontale.length / 1024)}KB` : 'mancante',
+      posteriore: photos.foto_posteriore ? `${Math.round(photos.foto_posteriore.length / 1024)}KB` : 'mancante',
+      destra: photos.foto_destra ? `${Math.round(photos.foto_destra.length / 1024)}KB` : 'mancante',
+      sinistra: photos.foto_sinistra ? `${Math.round(photos.foto_sinistra.length / 1024)}KB` : 'mancante',
+      cruscotto: photos.foto_cruscotto ? `${Math.round(photos.foto_cruscotto.length / 1024)}KB` : 'mancante'
+    });
+
     // Formatta ora partenza per il database
     const ora_partenza_db = `${today} ${ora_partenza}:00`;
 
