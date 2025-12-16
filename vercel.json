@@ -13,12 +13,6 @@
       }
     }
   ],
-  "functions": {
-    "server.js": {
-      "memory": 3008,
-      "maxDuration": 30
-    }
-  },
   "routes": [
     {
       "src": "/css/(.*)",
