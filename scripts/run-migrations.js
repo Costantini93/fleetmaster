@@ -20,10 +20,37 @@ async function ensureMaintenanceLetta() {
   }
 }
 
+async function ensureDailyReportsRifornimento() {
+  const info = await get("SELECT sql FROM sqlite_master WHERE type='table' AND name='daily_reports'");
+  if (info && info.sql) {
+    if (!info.sql.includes('metodo_rifornimento')) {
+      await run("ALTER TABLE daily_reports ADD COLUMN metodo_rifornimento TEXT CHECK(metodo_rifornimento IN ('IP', 'DKV', 'Nessuno'))");
+      console.log('✓ Aggiunta colonna daily_reports.metodo_rifornimento');
+    } else {
+      console.log('✓ daily_reports.metodo_rifornimento già presente');
+    }
+    
+    if (!info.sql.includes('importo_rifornimento')) {
+      await run("ALTER TABLE daily_reports ADD COLUMN importo_rifornimento REAL");
+      console.log('✓ Aggiunta colonna daily_reports.importo_rifornimento');
+    } else {
+      console.log('✓ daily_reports.importo_rifornimento già presente');
+    }
+    
+    if (!info.sql.includes('numero_tessera_dkv')) {
+      await run("ALTER TABLE daily_reports ADD COLUMN numero_tessera_dkv TEXT");
+      console.log('✓ Aggiunta colonna daily_reports.numero_tessera_dkv');
+    } else {
+      console.log('✓ daily_reports.numero_tessera_dkv già presente');
+    }
+  }
+}
+
 (async () => {
   try {
     await ensureVehiclesStato();
     await ensureMaintenanceLetta();
+    await ensureDailyReportsRifornimento();
     console.log('✅ Migrazioni schema completate');
     process.exit(0);
   } catch (err) {
