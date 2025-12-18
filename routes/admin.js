@@ -6,6 +6,8 @@ const path = require('path');
 const { get, all, run } = require('../config/database');
 const { isAuthenticated, isAdmin, checkFirstLogin, logActivity } = require('../middleware/auth');
 const { manualBackup } = require('../utils/backupService');
+const { uploadVehicleDocuments, deleteVehicleDocuments } = require('../utils/blobStorage');
+const { validateEmployee, validateVehicle, validateId } = require('../middleware/validation');
 
 // Configurazione multer per upload documenti PDF in memoria (per Vercel)
 const storage = multer.memoryStorage();
@@ -207,7 +209,7 @@ router.get('/employees/new', (req, res) => {
   });
 });
 
-router.post('/employees/new', async (req, res) => {
+router.post('/employees/new', validateEmployee, async (req, res) => {
   const { nome, cognome, email, password, telefono, ruolo } = req.body;
   const username = email; // Email viene usata come username
 
@@ -290,7 +292,7 @@ router.get('/employees/edit/:id', async (req, res) => {
   }
 });
 
-router.post('/employees/edit/:id', async (req, res) => {
+router.post('/employees/edit/:id', validateId, validateEmployee, async (req, res) => {
   const { nome, cognome, username, telefono, ruolo, attivo } = req.body;
 
   try {
@@ -472,7 +474,7 @@ router.post('/vehicles/new', upload.fields([
   { name: 'libretto_pdf', maxCount: 1 },
   { name: 'assicurazione_pdf', maxCount: 1 },
   { name: 'contratto_pdf', maxCount: 1 }
-]), async (req, res) => {
+]), validateVehicle, async (req, res) => {
   const { targa, modello, anno, km_attuali, note_manutenzione } = req.body;
 
   try {
@@ -489,22 +491,23 @@ router.post('/vehicles/new', upload.fields([
       return res.redirect('/admin/vehicles/new');
     }
 
-    // Converti i file PDF in base64 per salvarli nel database
-    const libretto_pdf = req.files?.libretto_pdf 
-      ? `data:application/pdf;base64,${req.files.libretto_pdf[0].buffer.toString('base64')}` 
-      : null;
-    const assicurazione_pdf = req.files?.assicurazione_pdf 
-      ? `data:application/pdf;base64,${req.files.assicurazione_pdf[0].buffer.toString('base64')}` 
-      : null;
-    const contratto_pdf = req.files?.contratto_pdf 
-      ? `data:application/pdf;base64,${req.files.contratto_pdf[0].buffer.toString('base64')}` 
-      : null;
+    // Upload PDF su Vercel Blob
+    const documentUrls = await uploadVehicleDocuments(req.files, targa.toUpperCase());
 
-    // Inserisci veicolo con documenti
+    // Inserisci veicolo con URL documenti
     await run(
       `INSERT INTO vehicles (targa, modello, anno, km_attuali, note_manutenzione, attivo, libretto_pdf, assicurazione_pdf, contratto_pdf) 
        VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)`,
-      [targa.toUpperCase(), modello, anno, km_attuali || 0, note_manutenzione || null, libretto_pdf, assicurazione_pdf, contratto_pdf]
+      [
+        targa.toUpperCase(), 
+        modello, 
+        anno, 
+        km_attuali || 0, 
+        note_manutenzione || null, 
+        documentUrls.libretto_pdf || null,
+        documentUrls.assicurazione_pdf || null,
+        documentUrls.contratto_pdf || null
+      ]
     );
 
     // Log attività
@@ -547,11 +550,11 @@ router.get('/vehicles/edit/:id', async (req, res) => {
   }
 });
 
-router.post('/vehicles/edit/:id', upload.fields([
+router.post('/vehicles/edit/:id', validateId, upload.fields([
   { name: 'libretto_pdf', maxCount: 1 },
   { name: 'assicurazione_pdf', maxCount: 1 },
   { name: 'contratto_pdf', maxCount: 1 }
-]), async (req, res) => {
+]), validateVehicle, async (req, res) => {
   const { targa, modello, anno, km_attuali, note_manutenzione, attivo } = req.body;
 
   try {
@@ -574,16 +577,38 @@ router.post('/vehicles/edit/:id', upload.fields([
       return res.redirect(`/admin/vehicles/edit/${req.params.id}`);
     }
 
-    // Gestisci i file PDF: usa i nuovi se caricati (base64), altrimenti mantieni i vecchi
-    const libretto_pdf = req.files?.libretto_pdf 
-      ? `data:application/pdf;base64,${req.files.libretto_pdf[0].buffer.toString('base64')}` 
-      : existingVehicle.libretto_pdf;
-    const assicurazione_pdf = req.files?.assicurazione_pdf 
-      ? `data:application/pdf;base64,${req.files.assicurazione_pdf[0].buffer.toString('base64')}` 
-      : existingVehicle.assicurazione_pdf;
-    const contratto_pdf = req.files?.contratto_pdf 
-      ? `data:application/pdf;base64,${req.files.contratto_pdf[0].buffer.toString('base64')}` 
-      : existingVehicle.contratto_pdf;
+    // Upload nuovi documenti se forniti e cancella i vecchi
+    let libretto_pdf = existingVehicle.libretto_pdf;
+    let assicurazione_pdf = existingVehicle.assicurazione_pdf;
+    let contratto_pdf = existingVehicle.contratto_pdf;
+
+    if (req.files && Object.keys(req.files).length > 0) {
+      // Prepara lista vecchi URL da cancellare
+      const oldUrls = {};
+      
+      if (req.files.libretto_pdf) {
+        oldUrls.libretto_pdf = existingVehicle.libretto_pdf;
+      }
+      if (req.files.assicurazione_pdf) {
+        oldUrls.assicurazione_pdf = existingVehicle.assicurazione_pdf;
+      }
+      if (req.files.contratto_pdf) {
+        oldUrls.contratto_pdf = existingVehicle.contratto_pdf;
+      }
+
+      // Upload nuovi documenti
+      const documentUrls = await uploadVehicleDocuments(req.files, targa.toUpperCase());
+      
+      // Sovrascrivi solo i nuovi caricati
+      if (documentUrls.libretto_pdf) libretto_pdf = documentUrls.libretto_pdf;
+      if (documentUrls.assicurazione_pdf) assicurazione_pdf = documentUrls.assicurazione_pdf;
+      if (documentUrls.contratto_pdf) contratto_pdf = documentUrls.contratto_pdf;
+
+      // Cancella vecchi file in background
+      deleteVehicleDocuments(oldUrls).catch(err => 
+        console.error('Errore cancellazione vecchi PDF:', err)
+      );
+    }
 
     // Aggiorna veicolo
     await run(
@@ -622,7 +647,12 @@ router.post('/vehicles/delete/:id', async (req, res) => {
       return res.json({ success: false, message: 'Veicolo non trovato' });
     }
 
-    // I file sono salvati nel database come base64, non serve eliminarli dal filesystem
+    // Cancella documenti PDF da Blob storage
+    await deleteVehicleDocuments({
+      libretto_pdf: vehicle.libretto_pdf,
+      assicurazione_pdf: vehicle.assicurazione_pdf,
+      contratto_pdf: vehicle.contratto_pdf
+    }).catch(err => console.error('Errore cancellazione PDF:', err));
 
     await run('DELETE FROM vehicles WHERE id = ?', [req.params.id]);
 

@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { get, run } = require('../config/database');
 const { isAuthenticated, logActivity } = require('../middleware/auth');
+const { validateLogin, validatePasswordChange } = require('../middleware/validation');
 
 // Pagina login
 router.get('/login', (req, res) => {

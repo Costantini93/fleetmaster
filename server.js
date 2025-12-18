@@ -4,10 +4,6 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 const app = express();
 
-// Import scheduler
-const { startNotificationScheduler } = require('./utils/notificationScheduler');
-const { scheduleWeeklyBackup } = require('./utils/backupService');
-
 // Import routes
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
@@ -16,6 +12,7 @@ const adminMaintenanceRoutes = require('./routes/admin-maintenance');
 const riderRoutes = require('./routes/rider');
 const apiRoutes = require('./routes/api');
 const notificationsRoutes = require('./routes/notifications');
+const cronRoutes = require('./routes/cron');
 
 // Middleware - aumenta limiti per foto da mobile
 app.use(express.json({ limit: '50mb' }));
@@ -111,6 +108,7 @@ app.use('/admin', adminMaintenanceRoutes);
 app.use('/rider', riderRoutes);
 app.use('/api', apiRoutes);
 app.use('/notifications', notificationsRoutes);
+app.use('/api/cron', cronRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -139,10 +137,5 @@ app.listen(PORT, HOST, () => {
   console.log(`🚀 Server Fleet Master avviato su ${HOST}:${PORT}`);
   console.log(`📱 Ambiente: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🌐 URL: http://localhost:${PORT}`);
-  
-  // Avvia scheduler notifiche
-  startNotificationScheduler();
-  
-  // Avvia backup settimanale
-  scheduleWeeklyBackup();
+  console.log(`⏰ Cron jobs gestiti da Vercel (produzione) o test manuali (dev)`);
 });
