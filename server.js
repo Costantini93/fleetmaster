@@ -4,6 +4,9 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 const app = express();
 
+// Import scheduler
+const { startNotificationScheduler } = require('./utils/notificationScheduler');
+
 // Import routes
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
@@ -11,6 +14,7 @@ const adminExtendedRoutes = require('./routes/admin-extended');
 const adminMaintenanceRoutes = require('./routes/admin-maintenance');
 const riderRoutes = require('./routes/rider');
 const apiRoutes = require('./routes/api');
+const notificationsRoutes = require('./routes/notifications');
 
 // Middleware - aumenta limiti per foto da mobile
 app.use(express.json({ limit: '50mb' }));
@@ -105,6 +109,7 @@ app.use('/admin', adminExtendedRoutes);
 app.use('/admin', adminMaintenanceRoutes);
 app.use('/rider', riderRoutes);
 app.use('/api', apiRoutes);
+app.use('/notifications', notificationsRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -133,4 +138,7 @@ app.listen(PORT, HOST, () => {
   console.log(`🚀 Server Fleet Master avviato su ${HOST}:${PORT}`);
   console.log(`📱 Ambiente: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🌐 URL: http://localhost:${PORT}`);
+  
+  // Avvia scheduler notifiche
+  startNotificationScheduler();
 });
