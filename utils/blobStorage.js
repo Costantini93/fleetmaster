@@ -1,13 +1,24 @@
-const { put, del } = require('@vercel/blob');
+// Import condizionale di @vercel/blob solo se configurato
+let put, del;
+const BLOB_ENABLED = !!(process.env.BLOB_READ_WRITE_TOKEN);
 
-// Verifica se Blob storage è configurato
-const BLOB_ENABLED = !!(process.env.BLOB_READ_WRITE_TOKEN || process.env.VERCEL);
+if (BLOB_ENABLED) {
+  try {
+    const blobModule = require('@vercel/blob');
+    put = blobModule.put;
+    del = blobModule.del;
+    console.log('✅ Vercel Blob storage abilitato');
+  } catch (error) {
+    console.log('⚠️  Errore import @vercel/blob, uso fallback base64');
+  }
+} else {
+  console.log('⚠️  BLOB_READ_WRITE_TOKEN non configurato, uso base64 legacy');
+}
 
 // Upload PDF su Vercel Blob (o fallback base64)
 async function uploadPDF(buffer, filename, folder = 'vehicles') {
   // Se Blob non configurato, ritorna null (usare base64 come fallback)
-  if (!BLOB_ENABLED) {
-    console.log('⚠️  Blob storage non configurato, usa base64 legacy');
+  if (!BLOB_ENABLED || !put) {
     return null;
   }
 
@@ -33,7 +44,7 @@ async function uploadPDF(buffer, filename, folder = 'vehicles') {
 
 // Elimina PDF da Vercel Blob
 async function deletePDF(url) {
-  if (!BLOB_ENABLED || !url) {
+  if (!BLOB_ENABLED || !del || !url) {
     return; // Skip se non configurato o URL vuoto
   }
 

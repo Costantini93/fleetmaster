@@ -1,25 +1,39 @@
 const nodemailer = require('nodemailer');
 const { all } = require('../config/database');
 
-// Configurazione transporter
-const transporter = nodemailer.createTransporter({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: process.env.SMTP_PORT || 587,
-  secure: false, // true per port 465, false per altri
-  auth: {
-    user: process.env.SMTP_USER, // es. 'noreply@tuodominio.it'
-    pass: process.env.SMTP_PASS  // es. password app Gmail
-  }
-});
+// Verifica se email è configurata
+const EMAIL_ENABLED = !!(process.env.SMTP_USER && process.env.SMTP_PASS);
 
-// Verifica configurazione
-transporter.verify((error, success) => {
-  if (error) {
-    console.log('⚠️  Email non configurate:', error.message);
-  } else {
-    console.log('✅ Server email pronto per inviare messaggi');
+let transporter = null;
+
+// Configurazione transporter solo se abilitato
+if (EMAIL_ENABLED) {
+  try {
+    transporter = nodemailer.createTransporter({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: process.env.SMTP_PORT || 587,
+      secure: false, // true per port 465, false per altri
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+      }
+    });
+
+    // Verifica configurazione
+    transporter.verify((error, success) => {
+      if (error) {
+        console.log('⚠️  Email non configurate correttamente:', error.message);
+      } else {
+        console.log('✅ Server email pronto per inviare messaggi');
+      }
+    });
+  } catch (error) {
+    console.log('⚠️  Errore configurazione email:', error.message);
+    transporter = null;
   }
-});
+} else {
+  console.log('⚠️  SMTP non configurato, email disabilitate');
+}
 
 // Template email base
 function getEmailTemplate(title, content, buttonText = null, buttonLink = null) {
@@ -102,7 +116,7 @@ function getEmailTemplate(title, content, buttonText = null, buttonLink = null) 
 // Funzione per inviare email
 async function sendEmail(to, subject, html) {
   try {
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    if (!transporter) {
       console.log('⚠️  Email non configurate - skip invio');
       return false;
     }
@@ -293,6 +307,11 @@ function getBackupEmailTemplate(backupInfo) {
 
 // Invia email con backup allegato
 async function sendBackupEmail(backup, backupInfo) {
+  if (!transporter) {
+    console.log('⚠️  Email non configurate - skip backup email');
+    return;
+  }
+
   const admins = await all("SELECT email FROM users WHERE ruolo = 'admin' AND attivo = 1");
   const adminEmails = admins.map(a => a.email).filter(Boolean);
 
