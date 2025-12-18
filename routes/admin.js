@@ -641,10 +641,11 @@ router.post('/vehicles/delete/:id', async (req, res) => {
   }
 });
 
-// Route per scaricare i documenti PDF dei veicoli (base64)
+// Route per visualizzare/scaricare i documenti PDF dei veicoli (base64)
 router.get('/vehicles/document/:id/:documentType', async (req, res) => {
   try {
     const { id, documentType } = req.params;
+    const download = req.query.download === 'true'; // Se true, forza download, altrimenti visualizza inline
 
     // Validazione tipo documento
     const allowedTypes = ['libretto_pdf', 'assicurazione_pdf', 'contratto_pdf'];
@@ -669,16 +670,16 @@ router.get('/vehicles/document/:id/:documentType', async (req, res) => {
     const base64Content = base64Data.replace(/^data:application\/pdf;base64,/, '');
     const pdfBuffer = Buffer.from(base64Content, 'base64');
 
-    // Imposta il nome del file per il download
+    // Imposta il nome del file
     const fileName = `${documentType}_${vehicle.targa}.pdf`;
 
-    // Invia il PDF
+    // Invia il PDF - inline per visualizzazione o attachment per download
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Disposition', download ? `attachment; filename="${fileName}"` : `inline; filename="${fileName}"`);
     res.send(pdfBuffer);
 
   } catch (error) {
-    console.error('Errore scaricamento documento:', error);
+    console.error('Errore visualizzazione documento:', error);
     res.status(500).send('Errore durante l\'operazione');
   }
 });

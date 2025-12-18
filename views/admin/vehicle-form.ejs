@@ -49,9 +49,14 @@
             <span style="color: #15803d;">
               <i class="fas fa-file-pdf"></i> File caricato
             </span>
-            <a href="/admin/vehicles/document/<%= vehicle.id %>/libretto_pdf" target="_blank" class="btn btn-sm btn-outline" style="padding: 0.25rem 0.75rem;">
-              <i class="fas fa-download"></i> Scarica
-            </a>
+            <div style="display: flex; gap: 0.5rem;">
+              <a href="/admin/vehicles/document/<%= vehicle.id %>/libretto_pdf" target="_blank" class="btn btn-sm btn-outline" style="padding: 0.25rem 0.75rem;">
+                <i class="fas fa-eye"></i> Visualizza
+              </a>
+              <a href="/admin/vehicles/document/<%= vehicle.id %>/libretto_pdf?download=true" class="btn btn-sm btn-outline" style="padding: 0.25rem 0.75rem;">
+                <i class="fas fa-download"></i> Scarica
+              </a>
+            </div>
           </div>
         <% } %>
         <input type="file" name="libretto_pdf" class="form-input" accept="application/pdf">
@@ -68,9 +73,14 @@
             <span style="color: #15803d;">
               <i class="fas fa-file-pdf"></i> File caricato
             </span>
-            <a href="/admin/vehicles/document/<%= vehicle.id %>/assicurazione_pdf" target="_blank" class="btn btn-sm btn-outline" style="padding: 0.25rem 0.75rem;">
-              <i class="fas fa-download"></i> Scarica
-            </a>
+            <div style="display: flex; gap: 0.5rem;">
+              <a href="/admin/vehicles/document/<%= vehicle.id %>/assicurazione_pdf" target="_blank" class="btn btn-sm btn-outline" style="padding: 0.25rem 0.75rem;">
+                <i class="fas fa-eye"></i> Visualizza
+              </a>
+              <a href="/admin/vehicles/document/<%= vehicle.id %>/assicurazione_pdf?download=true" class="btn btn-sm btn-outline" style="padding: 0.25rem 0.75rem;">
+                <i class="fas fa-download"></i> Scarica
+              </a>
+            </div>
           </div>
         <% } %>
         <input type="file" name="assicurazione_pdf" class="form-input" accept="application/pdf">
@@ -87,9 +97,14 @@
             <span style="color: #15803d;">
               <i class="fas fa-file-pdf"></i> File caricato
             </span>
-            <a href="/admin/vehicles/document/<%= vehicle.id %>/contratto_pdf" target="_blank" class="btn btn-sm btn-outline" style="padding: 0.25rem 0.75rem;">
-              <i class="fas fa-download"></i> Scarica
-            </a>
+            <div style="display: flex; gap: 0.5rem;">
+              <a href="/admin/vehicles/document/<%= vehicle.id %>/contratto_pdf" target="_blank" class="btn btn-sm btn-outline" style="padding: 0.25rem 0.75rem;">
+                <i class="fas fa-eye"></i> Visualizza
+              </a>
+              <a href="/admin/vehicles/document/<%= vehicle.id %>/contratto_pdf?download=true" class="btn btn-sm btn-outline" style="padding: 0.25rem 0.75rem;">
+                <i class="fas fa-download"></i> Scarica
+              </a>
+            </div>
           </div>
         <% } %>
         <input type="file" name="contratto_pdf" class="form-input" accept="application/pdf">
