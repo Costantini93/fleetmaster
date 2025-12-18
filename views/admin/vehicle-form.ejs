@@ -50,7 +50,7 @@
               <i class="fas fa-file-pdf"></i> File caricato
             </span>
             <div style="display: flex; gap: 0.5rem;">
-              <a href="/admin/vehicles/document/<%= vehicle.id %>/libretto_pdf" target="_blank" class="btn btn-sm btn-outline" style="padding: 0.25rem 0.75rem;">
+              <a href="/admin/vehicles/document/<%= vehicle.id %>/libretto_pdf?v=<%= Date.now() %>" target="_blank" class="btn btn-sm btn-outline" style="padding: 0.25rem 0.75rem;">
                 <i class="fas fa-eye"></i> Visualizza
               </a>
               <a href="/admin/vehicles/document/<%= vehicle.id %>/libretto_pdf?download=true" download class="btn btn-sm btn-outline" style="padding: 0.25rem 0.75rem;">
