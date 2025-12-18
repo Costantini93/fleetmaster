@@ -62,8 +62,12 @@ async function deletePDF(url) {
   }
 }
 
-//// Se Blob non configurato, converti in base64 (legacy mode)
-  if (!BLOB_ENABLED) {
+// Upload multipli (libretto, assicurazione, contratto)
+async function uploadVehicleDocuments(files, targa) {
+  const urls = {};
+  
+  // Se Blob non configurato, converti in base64 (legacy mode)
+  if (!BLOB_ENABLED || !put) {
     if (files.libretto_pdf && files.libretto_pdf[0]) {
       urls.libretto_pdf = `data:application/pdf;base64,${files.libretto_pdf[0].buffer.toString('base64')}`;
     }
@@ -105,11 +109,7 @@ async function deletePDF(url) {
       'vehicles'
     );
     if (url) urls.contratto_pdf = url;
-    else urls.contratto_pdf = `data:application/pdf;base64,${files.contratto_pdf[0].buffer.toString('base64')}`rls.contratto_pdf = await uploadPDF(
-      files.contratto_pdf[0].buffer,
-      `${targa}_contratto.pdf`,
-      'vehicles'
-    );
+    else urls.contratto_pdf = `data:application/pdf;base64,${files.contratto_pdf[0].buffer.toString('base64')}`;
   }
   
   return urls;
