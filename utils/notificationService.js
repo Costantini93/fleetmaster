@@ -1,13 +1,27 @@
 const { get, all, run } = require('../config/database');
+const { sendPushToUser, sendPushToAdmins } = require('./pushService');
 
 // Crea una notifica
-async function createNotification(userId, tipo, titolo, messaggio, link = null, priorita = 'media', metadata = null) {
+async function createNotification(userId, tipo, titolo, messaggio, link = null, priorita = 'media', metadata = null, sendPush = true) {
   try {
     await run(
       `INSERT INTO notifications (user_id, tipo, titolo, messaggio, link, priorita, metadata) 
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [userId, tipo, titolo, messaggio, link, priorita, metadata ? JSON.stringify(metadata) : null]
     );
+    
+    // Invia push se richiesto e priorità alta/critica
+    if (sendPush && (priorita === 'alta' || priorita === 'critica')) {
+      await sendPushToUser(userId, {
+        title: titolo,
+        body: messaggio,
+        icon: '/icons/icon-192.png',
+        badge: '/icons/icon-192.png',
+        tag: tipo,
+        priority: priorita,
+        data: { url: link || '/' }
+      });
+    }
   } catch (error) {
     console.error('Errore creazione notifica:', error);
   }
@@ -94,11 +108,24 @@ async function cleanOldNotifications() {
 }
 
 // Notifiche per tutti gli admin
-async function notifyAllAdmins(tipo, titolo, messaggio, link = null, priorita = 'media') {
+async function notifyAllAdmins(tipo, titolo, messaggio, link = null, priorita = 'media', sendPush = true) {
   try {
     const admins = await all("SELECT id FROM users WHERE ruolo = 'admin' AND attivo = 1");
     for (const admin of admins) {
-      await createNotification(admin.id, tipo, titolo, messaggio, link, priorita);
+      await createNotification(admin.id, tipo, titolo, messaggio, link, priorita, null, sendPush);
+    }
+    
+    // Invia push a tutti gli admin per priorità alta/critica
+    if (sendPush && (priorita === 'alta' || priorita === 'critica')) {
+      await sendPushToAdmins({
+        title: titolo,
+        body: messaggio,
+        icon: '/icons/icon-192.png',
+        badge: '/icons/icon-192.png',
+        tag: tipo,
+        priority: priorita,
+        data: { url: link || '/' }
+      });
     }
   } catch (error) {
     console.error('Errore notifica admin:', error);

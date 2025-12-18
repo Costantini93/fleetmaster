@@ -48,6 +48,79 @@ self.addEventListener('activate', (event) => {
   return self.clients.claim();
 });
 
+// ==================== PUSH NOTIFICATIONS ====================
+
+// Gestione notifiche push
+self.addEventListener('push', (event) => {
+  console.log('[Service Worker] Push ricevuto:', event);
+  
+  let data = {
+    title: 'ROBI Fleet',
+    body: 'Nuova notifica',
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    tag: 'notification',
+    data: { url: '/' }
+  };
+  
+  if (event.data) {
+    try {
+      data = { ...data, ...event.data.json() };
+    } catch (e) {
+      console.error('[Service Worker] Errore parsing push data:', e);
+    }
+  }
+  
+  const options = {
+    body: data.body,
+    icon: data.icon,
+    badge: data.badge,
+    tag: data.tag,
+    data: data.data,
+    requireInteraction: data.priority === 'alta' || data.priority === 'critica',
+    vibrate: data.priority === 'critica' ? [200, 100, 200] : [100],
+    actions: [
+      { action: 'open', title: 'Apri' },
+      { action: 'close', title: 'Chiudi' }
+    ]
+  };
+  
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
+});
+
+// Click su notifica
+self.addEventListener('notificationclick', (event) => {
+  console.log('[Service Worker] Click notifica:', event);
+  
+  event.notification.close();
+  
+  if (event.action === 'close') {
+    return;
+  }
+  
+  const urlToOpen = event.notification.data?.url || '/';
+  
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        // Cerca una finestra già aperta
+        for (const client of clientList) {
+          if (client.url.includes(self.location.origin) && 'focus' in client) {
+            client.focus();
+            client.navigate(urlToOpen);
+            return;
+          }
+        }
+        // Apri una nuova finestra
+        if (clients.openWindow) {
+          return clients.openWindow(urlToOpen);
+        }
+      })
+  );
+});
+
 // Intercetta le richieste
 self.addEventListener('fetch', (event) => {
   // Ignora richieste non-GET

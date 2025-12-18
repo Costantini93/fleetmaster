@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const { all } = require('../config/database');
 
 // Configurazione transporter
 const transporter = nodemailer.createTransporter({
@@ -227,6 +228,99 @@ async function sendWeeklyReportEmail(adminEmail, stats) {
   return await sendEmail(adminEmail, `Report Settimanale - ${new Date().toLocaleDateString('it-IT')}`, html);
 }
 
+// Template email per backup database
+function getBackupEmailTemplate(backupInfo) {
+  const { size, duration, stats } = backupInfo;
+  const date = new Date().toLocaleString('it-IT');
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #28a745; color: white; padding: 20px; text-align: center; border-radius: 5px; }
+        .content { background: #f8f9fa; padding: 20px; margin-top: 20px; border-radius: 5px; }
+        .stats { background: white; padding: 15px; margin: 15px 0; border-left: 4px solid #28a745; }
+        .table-list { list-style: none; padding: 0; }
+        .table-item { padding: 8px; border-bottom: 1px solid #dee2e6; }
+        .footer { text-align: center; margin-top: 20px; color: #6c757d; font-size: 12px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h2>📊 Backup Database Completato</h2>
+        </div>
+        <div class="content">
+          <p><strong>Data:</strong> ${date}</p>
+          
+          <div class="stats">
+            <h3>📈 Statistiche Backup</h3>
+            <ul style="list-style: none; padding: 0;">
+              <li>⏱️ <strong>Durata:</strong> ${duration} secondi</li>
+              <li>💾 <strong>Dimensione:</strong> ${size} MB</li>
+              <li>📁 <strong>Tabelle:</strong> ${stats.totalTables}</li>
+              <li>📝 <strong>Righe totali:</strong> ${stats.totalRows.toLocaleString('it-IT')}</li>
+            </ul>
+          </div>
+
+          <div class="stats">
+            <h3>📋 Dettaglio Tabelle</h3>
+            <ul class="table-list">
+              ${stats.tableDetails.map(t => `
+                <li class="table-item">
+                  <strong>${t.name}:</strong> ${t.rows.toLocaleString('it-IT')} righe
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+
+          <p style="margin-top: 20px;">
+            <strong>ℹ️ Nota:</strong> Il file JSON completo del backup è allegato a questa email.
+            Conservalo in un luogo sicuro per eventuali ripristini futuri.
+          </p>
+        </div>
+        <div class="footer">
+          <p>Questo è un backup automatico generato dal sistema ROBI Fleet Management</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+// Invia email con backup allegato
+async function sendBackupEmail(backup, backupInfo) {
+  const admins = await all("SELECT email FROM users WHERE ruolo = 'admin' AND attivo = 1");
+  const adminEmails = admins.map(a => a.email).filter(Boolean);
+
+  if (adminEmails.length === 0) {
+    console.log('Nessun admin con email configurata per backup');
+    return;
+  }
+
+  const date = new Date().toISOString().split('T')[0];
+  const filename = `backup-database-${date}.json`;
+
+  const mailOptions = {
+    from: process.env.SMTP_USER,
+    to: adminEmails.join(','),
+    subject: `📊 Backup Database - ${date}`,
+    html: getBackupEmailTemplate(backupInfo),
+    attachments: [
+      {
+        filename: filename,
+        content: JSON.stringify(backup, null, 2),
+        contentType: 'application/json'
+      }
+    ]
+  };
+
+  return await transporter.sendMail(mailOptions);
+}
+
 module.exports = {
   sendEmail,
   sendDocumentExpiryEmail,
@@ -234,5 +328,6 @@ module.exports = {
   sendMaintenanceUrgentEmail,
   sendMaintenanceKmEmail,
   sendWeeklyReportEmail,
+  sendBackupEmail,
   getEmailTemplate
 };

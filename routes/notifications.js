@@ -8,6 +8,11 @@ const {
   markAsRead,
   markAllAsRead
 } = require('../utils/notificationService');
+const {
+  saveSubscription,
+  removeSubscription,
+  getPublicKey
+} = require('../utils/pushService');
 
 // Applica autenticazione
 router.use(isAuthenticated);
@@ -64,6 +69,43 @@ router.post('/read-all', async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error('Errore aggiornamento notifiche:', error);
+    res.status(500).json({ error: 'Errore server' });
+  }
+});
+
+// ==================== PUSH NOTIFICATIONS ====================
+
+// GET - Ottieni VAPID public key
+router.get('/vapid-public-key', (req, res) => {
+  try {
+    const publicKey = getPublicKey();
+    res.json({ publicKey });
+  } catch (error) {
+    console.error('Errore recupero public key:', error);
+    res.status(500).json({ error: 'Errore server' });
+  }
+});
+
+// POST - Salva push subscription
+router.post('/subscribe', async (req, res) => {
+  try {
+    const subscription = req.body;
+    const result = await saveSubscription(req.user.id, subscription);
+    res.json(result);
+  } catch (error) {
+    console.error('Errore salvataggio subscription:', error);
+    res.status(500).json({ error: 'Errore server' });
+  }
+});
+
+// POST - Rimuovi push subscription
+router.post('/unsubscribe', async (req, res) => {
+  try {
+    const { endpoint } = req.body;
+    const result = await removeSubscription(req.user.id, endpoint);
+    res.json(result);
+  } catch (error) {
+    console.error('Errore rimozione subscription:', error);
     res.status(500).json({ error: 'Errore server' });
   }
 });

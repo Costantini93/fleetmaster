@@ -63,6 +63,19 @@
   </div>
 </div>
 
+<!-- Azioni Rapide -->
+<div class="card mt-3">
+  <div class="card-header">
+    <h2 class="card-title">⚡ Azioni Rapide</h2>
+  </div>
+  <div class="card-body" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+    <button onclick="manualBackup()" class="btn btn-info">
+      <i class="fas fa-database"></i> Backup Manuale
+    </button>
+    <span id="backupStatus" style="color: #666; font-size: 0.9em; align-self: center;"></span>
+  </div>
+</div>
+
 <!-- Tabella Rapporti Completa -->
 <div class="card mt-3">
   <div class="card-header">
@@ -500,6 +513,36 @@ async function deleteSelected() {
   } catch (error) {
     console.error(error);
     alert('Errore di connessione');
+  }
+}
+
+// Backup manuale database
+async function manualBackup() {
+  const statusEl = document.getElementById('backupStatus');
+  statusEl.textContent = 'Backup in corso...';
+  statusEl.style.color = '#007bff';
+  
+  try {
+    const response = await fetch('/admin/backup/manual', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await response.json();
+    
+    if (data.success) {
+      statusEl.textContent = `✅ ${data.message}`;
+      statusEl.style.color = '#28a745';
+      setTimeout(() => {
+        statusEl.textContent = '';
+      }, 5000);
+    } else {
+      statusEl.textContent = `❌ ${data.message}`;
+      statusEl.style.color = '#dc3545';
+    }
+  } catch (error) {
+    console.error(error);
+    statusEl.textContent = '❌ Errore di connessione';
+    statusEl.style.color = '#dc3545';
   }
 }
 </script>

@@ -5,6 +5,7 @@ const multer = require('multer');
 const path = require('path');
 const { get, all, run } = require('../config/database');
 const { isAuthenticated, isAdmin, checkFirstLogin, logActivity } = require('../middleware/auth');
+const { manualBackup } = require('../utils/backupService');
 
 // Configurazione multer per upload documenti PDF in memoria (per Vercel)
 const storage = multer.memoryStorage();
@@ -990,6 +991,35 @@ router.post('/assignments/auto-assign', async (req, res) => {
     res.json({ 
       success: false, 
       message: 'Errore durante l\'assegnazione automatica: ' + error.message 
+    });
+  }
+});
+
+// ==================== BACKUP MANUALE ====================
+router.post('/backup/manual', async (req, res) => {
+  try {
+    const result = await manualBackup();
+    
+    if (result.success) {
+      await logActivity(req.user.id, 'BACKUP_MANUAL', null, 
+        `Backup manuale eseguito (${result.size}MB, ${result.stats.totalRows} righe)`);
+      
+      res.json({ 
+        success: true, 
+        message: `Backup completato e inviato via email (${result.size}MB)`,
+        stats: result.stats
+      });
+    } else {
+      res.json({ 
+        success: false, 
+        message: 'Errore durante il backup: ' + result.error 
+      });
+    }
+  } catch (error) {
+    console.error('❌ Errore backup manuale:', error);
+    res.json({ 
+      success: false, 
+      message: 'Errore durante il backup: ' + error.message 
     });
   }
 });

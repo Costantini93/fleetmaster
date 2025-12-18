@@ -6,6 +6,7 @@ const app = express();
 
 // Import scheduler
 const { startNotificationScheduler } = require('./utils/notificationScheduler');
+const { scheduleWeeklyBackup } = require('./utils/backupService');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -141,4 +142,7 @@ app.listen(PORT, HOST, () => {
   
   // Avvia scheduler notifiche
   startNotificationScheduler();
+  
+  // Avvia backup settimanale
+  scheduleWeeklyBackup();
 });
