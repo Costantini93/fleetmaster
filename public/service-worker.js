@@ -15,11 +15,16 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('[Service Worker] Caching delle risorse');
-        return cache.addAll(urlsToCache);
-      })
-      .catch((error) => {
-        console.error('[Service Worker] Errore durante il caching:', error);
+        console.log('[Service Worker] Caching delle risorse essenziali');
+        // Cache solo risorse che esistono sicuramente (minimal)
+        return cache.addAll([
+          '/offline.html',
+          '/css/style.css'
+        ]).catch((error) => {
+          console.error('[Service Worker] Errore caching (non bloccante):', error);
+          // Non blocchiamo l'installazione
+          return Promise.resolve();
+        });
       })
   );
   
