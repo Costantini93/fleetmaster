@@ -673,9 +673,15 @@ router.get('/vehicles/document/:id/:documentType', async (req, res) => {
     // Imposta il nome del file
     const fileName = `${documentType}_${vehicle.targa}.pdf`;
 
-    // Invia il PDF - inline per visualizzazione o attachment per download
+    // Invia il PDF
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', download ? `attachment; filename="${fileName}"` : `inline; filename="${fileName}"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    
+    // Solo per download forziamo il Content-Disposition, altrimenti lasciamo il browser decidere
+    if (download) {
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    }
+    
     res.send(pdfBuffer);
 
   } catch (error) {
