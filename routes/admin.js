@@ -3,29 +3,11 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 const { get, all, run } = require('../config/database');
 const { isAuthenticated, isAdmin, checkFirstLogin, logActivity } = require('../middleware/auth');
 
-// Configurazione multer per upload documenti PDF
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = 'uploads/vehicle-documents/';
-    // Crea la directory se non esiste
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    // Genera nome file: tipo_targa_timestamp.pdf
-    const fieldName = file.fieldname; // libretto_pdf, assicurazione_pdf, contratto_pdf
-    const targa = req.body.targa ? req.body.targa.toUpperCase().replace(/\s/g, '_') : 'TEMP';
-    const timestamp = Date.now();
-    const ext = path.extname(file.originalname);
-    cb(null, `${fieldName}_${targa}_${timestamp}${ext}`);
-  }
-});
+// Configurazione multer per upload documenti PDF in memoria (per Vercel)
+const storage = multer.memoryStorage();
 
 // Filtro per accettare solo PDF
 const fileFilter = (req, file, cb) => {
@@ -506,10 +488,16 @@ router.post('/vehicles/new', upload.fields([
       return res.redirect('/admin/vehicles/new');
     }
 
-    // Raccogli i path dei file caricati
-    const libretto_pdf = req.files?.libretto_pdf ? req.files.libretto_pdf[0].path : null;
-    const assicurazione_pdf = req.files?.assicurazione_pdf ? req.files.assicurazione_pdf[0].path : null;
-    const contratto_pdf = req.files?.contratto_pdf ? req.files.contratto_pdf[0].path : null;
+    // Converti i file PDF in base64 per salvarli nel database
+    const libretto_pdf = req.files?.libretto_pdf 
+      ? `data:application/pdf;base64,${req.files.libretto_pdf[0].buffer.toString('base64')}` 
+      : null;
+    const assicurazione_pdf = req.files?.assicurazione_pdf 
+      ? `data:application/pdf;base64,${req.files.assicurazione_pdf[0].buffer.toString('base64')}` 
+      : null;
+    const contratto_pdf = req.files?.contratto_pdf 
+      ? `data:application/pdf;base64,${req.files.contratto_pdf[0].buffer.toString('base64')}` 
+      : null;
 
     // Inserisci veicolo con documenti
     await run(
@@ -585,33 +573,16 @@ router.post('/vehicles/edit/:id', upload.fields([
       return res.redirect(`/admin/vehicles/edit/${req.params.id}`);
     }
 
-    // Gestisci i file PDF: usa i nuovi se caricati, altrimenti mantieni i vecchi
-    const libretto_pdf = req.files?.libretto_pdf ? req.files.libretto_pdf[0].path : existingVehicle.libretto_pdf;
-    const assicurazione_pdf = req.files?.assicurazione_pdf ? req.files.assicurazione_pdf[0].path : existingVehicle.assicurazione_pdf;
-    const contratto_pdf = req.files?.contratto_pdf ? req.files.contratto_pdf[0].path : existingVehicle.contratto_pdf;
-
-    // Se sono stati caricati nuovi file, elimina i vecchi
-    if (req.files?.libretto_pdf && existingVehicle.libretto_pdf) {
-      try {
-        fs.unlinkSync(existingVehicle.libretto_pdf);
-      } catch (err) {
-        console.error('Errore eliminazione vecchio libretto:', err);
-      }
-    }
-    if (req.files?.assicurazione_pdf && existingVehicle.assicurazione_pdf) {
-      try {
-        fs.unlinkSync(existingVehicle.assicurazione_pdf);
-      } catch (err) {
-        console.error('Errore eliminazione vecchia assicurazione:', err);
-      }
-    }
-    if (req.files?.contratto_pdf && existingVehicle.contratto_pdf) {
-      try {
-        fs.unlinkSync(existingVehicle.contratto_pdf);
-      } catch (err) {
-        console.error('Errore eliminazione vecchio contratto:', err);
-      }
-    }
+    // Gestisci i file PDF: usa i nuovi se caricati (base64), altrimenti mantieni i vecchi
+    const libretto_pdf = req.files?.libretto_pdf 
+      ? `data:application/pdf;base64,${req.files.libretto_pdf[0].buffer.toString('base64')}` 
+      : existingVehicle.libretto_pdf;
+    const assicurazione_pdf = req.files?.assicurazione_pdf 
+      ? `data:application/pdf;base64,${req.files.assicurazione_pdf[0].buffer.toString('base64')}` 
+      : existingVehicle.assicurazione_pdf;
+    const contratto_pdf = req.files?.contratto_pdf 
+      ? `data:application/pdf;base64,${req.files.contratto_pdf[0].buffer.toString('base64')}` 
+      : existingVehicle.contratto_pdf;
 
     // Aggiorna veicolo
     await run(
@@ -650,28 +621,7 @@ router.post('/vehicles/delete/:id', async (req, res) => {
       return res.json({ success: false, message: 'Veicolo non trovato' });
     }
 
-    // Elimina i file PDF associati
-    if (vehicle.libretto_pdf) {
-      try {
-        fs.unlinkSync(vehicle.libretto_pdf);
-      } catch (err) {
-        console.error('Errore eliminazione libretto:', err);
-      }
-    }
-    if (vehicle.assicurazione_pdf) {
-      try {
-        fs.unlinkSync(vehicle.assicurazione_pdf);
-      } catch (err) {
-        console.error('Errore eliminazione assicurazione:', err);
-      }
-    }
-    if (vehicle.contratto_pdf) {
-      try {
-        fs.unlinkSync(vehicle.contratto_pdf);
-      } catch (err) {
-        console.error('Errore eliminazione contratto:', err);
-      }
-    }
+    // I file sono salvati nel database come base64, non serve eliminarli dal filesystem
 
     await run('DELETE FROM vehicles WHERE id = ?', [req.params.id]);
 
@@ -691,7 +641,7 @@ router.post('/vehicles/delete/:id', async (req, res) => {
   }
 });
 
-// Route per scaricare i documenti PDF dei veicoli
+// Route per scaricare i documenti PDF dei veicoli (base64)
 router.get('/vehicles/document/:id/:documentType', async (req, res) => {
   try {
     const { id, documentType } = req.params;
@@ -709,29 +659,23 @@ router.get('/vehicles/document/:id/:documentType', async (req, res) => {
       return res.status(404).send('Veicolo non trovato');
     }
 
-    const filePath = vehicle[documentType];
+    const base64Data = vehicle[documentType];
 
-    if (!filePath) {
+    if (!base64Data) {
       return res.status(404).send('Documento non trovato');
     }
 
-    // Verifica che il file esista
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).send('File non trovato sul server');
-    }
+    // Rimuovi il prefisso data:application/pdf;base64,
+    const base64Content = base64Data.replace(/^data:application\/pdf;base64,/, '');
+    const pdfBuffer = Buffer.from(base64Content, 'base64');
 
     // Imposta il nome del file per il download
-    const fileName = path.basename(filePath);
+    const fileName = `${documentType}_${vehicle.targa}.pdf`;
 
-    // Invia il file
-    res.download(filePath, fileName, (err) => {
-      if (err) {
-        console.error('Errore download documento:', err);
-        if (!res.headersSent) {
-          res.status(500).send('Errore durante il download del documento');
-        }
-      }
-    });
+    // Invia il PDF
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.send(pdfBuffer);
 
   } catch (error) {
     console.error('Errore scaricamento documento:', error);
