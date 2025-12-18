@@ -5,7 +5,7 @@
     <h2 class="card-title"><%= action === 'create' ? 'Aggiungi Nuovo Veicolo' : 'Modifica Veicolo' %></h2>
   </div>
 
-  <form action="<%= action === 'create' ? '/admin/vehicles/new' : '/admin/vehicles/edit/' + vehicle.id %>" method="POST">
+  <form action="<%= action === 'create' ? '/admin/vehicles/new' : '/admin/vehicles/edit/' + vehicle.id %>" method="POST" enctype="multipart/form-data">
     <div class="form-group">
       <label class="form-label">Targa *</label>
       <input type="text" name="targa" class="form-input" value="<%= vehicle ? vehicle.targa : '' %>" required style="text-transform: uppercase;">
@@ -31,6 +31,70 @@
     <div class="form-group">
       <label class="form-label">Note Manutenzione</label>
       <textarea name="note_manutenzione" class="form-textarea" rows="4"><%= vehicle ? vehicle.note_manutenzione || '' : '' %></textarea>
+    </div>
+
+    <!-- Sezione Documenti PDF -->
+    <div style="border-top: 2px solid #e5e7eb; margin: 2rem 0; padding-top: 2rem;">
+      <h3 style="margin-bottom: 1.5rem; color: #374151; font-size: 1.25rem;">
+        <i class="fas fa-file-pdf"></i> Documenti PDF
+      </h3>
+
+      <!-- Libretto -->
+      <div class="form-group">
+        <label class="form-label">
+          <i class="fas fa-book"></i> Libretto di Circolazione
+        </label>
+        <% if (action === 'edit' && vehicle && vehicle.libretto_pdf) { %>
+          <div style="margin-bottom: 0.5rem; padding: 0.5rem; background-color: #f0fdf4; border-radius: 0.375rem; display: flex; align-items: center; justify-content: space-between;">
+            <span style="color: #15803d;">
+              <i class="fas fa-file-pdf"></i> File caricato: <%= vehicle.libretto_pdf.split('/').pop() %>
+            </span>
+            <a href="/admin/vehicles/document/<%= vehicle.id %>/libretto_pdf" target="_blank" class="btn btn-sm btn-outline" style="padding: 0.25rem 0.75rem;">
+              <i class="fas fa-download"></i> Scarica
+            </a>
+          </div>
+        <% } %>
+        <input type="file" name="libretto_pdf" class="form-input" accept="application/pdf">
+        <p class="form-help">Formato: PDF (max 10MB). Carica un nuovo file per sostituire quello esistente.</p>
+      </div>
+
+      <!-- Assicurazione -->
+      <div class="form-group">
+        <label class="form-label">
+          <i class="fas fa-shield-alt"></i> Assicurazione
+        </label>
+        <% if (action === 'edit' && vehicle && vehicle.assicurazione_pdf) { %>
+          <div style="margin-bottom: 0.5rem; padding: 0.5rem; background-color: #f0fdf4; border-radius: 0.375rem; display: flex; align-items: center; justify-content: space-between;">
+            <span style="color: #15803d;">
+              <i class="fas fa-file-pdf"></i> File caricato: <%= vehicle.assicurazione_pdf.split('/').pop() %>
+            </span>
+            <a href="/admin/vehicles/document/<%= vehicle.id %>/assicurazione_pdf" target="_blank" class="btn btn-sm btn-outline" style="padding: 0.25rem 0.75rem;">
+              <i class="fas fa-download"></i> Scarica
+            </a>
+          </div>
+        <% } %>
+        <input type="file" name="assicurazione_pdf" class="form-input" accept="application/pdf">
+        <p class="form-help">Formato: PDF (max 10MB). Carica un nuovo file per sostituire quello esistente.</p>
+      </div>
+
+      <!-- Contratto -->
+      <div class="form-group">
+        <label class="form-label">
+          <i class="fas fa-file-contract"></i> Contratto
+        </label>
+        <% if (action === 'edit' && vehicle && vehicle.contratto_pdf) { %>
+          <div style="margin-bottom: 0.5rem; padding: 0.5rem; background-color: #f0fdf4; border-radius: 0.375rem; display: flex; align-items: center; justify-content: space-between;">
+            <span style="color: #15803d;">
+              <i class="fas fa-file-pdf"></i> File caricato: <%= vehicle.contratto_pdf.split('/').pop() %>
+            </span>
+            <a href="/admin/vehicles/document/<%= vehicle.id %>/contratto_pdf" target="_blank" class="btn btn-sm btn-outline" style="padding: 0.25rem 0.75rem;">
+              <i class="fas fa-download"></i> Scarica
+            </a>
+          </div>
+        <% } %>
+        <input type="file" name="contratto_pdf" class="form-input" accept="application/pdf">
+        <p class="form-help">Formato: PDF (max 10MB). Carica un nuovo file per sostituire quello esistente.</p>
+      </div>
     </div>
 
     <% if (action === 'edit') { %>

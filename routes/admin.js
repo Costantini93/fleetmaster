@@ -1,8 +1,48 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const { get, all, run } = require('../config/database');
 const { isAuthenticated, isAdmin, checkFirstLogin, logActivity } = require('../middleware/auth');
+
+// Configurazione multer per upload documenti PDF
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = 'uploads/vehicle-documents/';
+    // Crea la directory se non esiste
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    // Genera nome file: tipo_targa_timestamp.pdf
+    const fieldName = file.fieldname; // libretto_pdf, assicurazione_pdf, contratto_pdf
+    const targa = req.body.targa ? req.body.targa.toUpperCase().replace(/\s/g, '_') : 'TEMP';
+    const timestamp = Date.now();
+    const ext = path.extname(file.originalname);
+    cb(null, `${fieldName}_${targa}_${timestamp}${ext}`);
+  }
+});
+
+// Filtro per accettare solo PDF
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype === 'application/pdf') {
+    cb(null, true);
+  } else {
+    cb(new Error('Solo file PDF sono permessi'), false);
+  }
+};
+
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // Max 10MB
+  }
+});
 
 // Applica middleware a tutte le route admin
 router.use(isAuthenticated);
@@ -445,7 +485,11 @@ router.get('/vehicles/new', (req, res) => {
   });
 });
 
-router.post('/vehicles/new', async (req, res) => {
+router.post('/vehicles/new', upload.fields([
+  { name: 'libretto_pdf', maxCount: 1 },
+  { name: 'assicurazione_pdf', maxCount: 1 },
+  { name: 'contratto_pdf', maxCount: 1 }
+]), async (req, res) => {
   const { targa, modello, anno, km_attuali, note_manutenzione } = req.body;
 
   try {
@@ -462,11 +506,16 @@ router.post('/vehicles/new', async (req, res) => {
       return res.redirect('/admin/vehicles/new');
     }
 
-    // Inserisci veicolo
+    // Raccogli i path dei file caricati
+    const libretto_pdf = req.files?.libretto_pdf ? req.files.libretto_pdf[0].path : null;
+    const assicurazione_pdf = req.files?.assicurazione_pdf ? req.files.assicurazione_pdf[0].path : null;
+    const contratto_pdf = req.files?.contratto_pdf ? req.files.contratto_pdf[0].path : null;
+
+    // Inserisci veicolo con documenti
     await run(
-      `INSERT INTO vehicles (targa, modello, anno, km_attuali, note_manutenzione, attivo) 
-       VALUES (?, ?, ?, ?, ?, 1)`,
-      [targa.toUpperCase(), modello, anno, km_attuali || 0, note_manutenzione || null]
+      `INSERT INTO vehicles (targa, modello, anno, km_attuali, note_manutenzione, attivo, libretto_pdf, assicurazione_pdf, contratto_pdf) 
+       VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)`,
+      [targa.toUpperCase(), modello, anno, km_attuali || 0, note_manutenzione || null, libretto_pdf, assicurazione_pdf, contratto_pdf]
     );
 
     // Log attività
@@ -509,10 +558,22 @@ router.get('/vehicles/edit/:id', async (req, res) => {
   }
 });
 
-router.post('/vehicles/edit/:id', async (req, res) => {
+router.post('/vehicles/edit/:id', upload.fields([
+  { name: 'libretto_pdf', maxCount: 1 },
+  { name: 'assicurazione_pdf', maxCount: 1 },
+  { name: 'contratto_pdf', maxCount: 1 }
+]), async (req, res) => {
   const { targa, modello, anno, km_attuali, note_manutenzione, attivo } = req.body;
 
   try {
+    // Ottieni il veicolo esistente
+    const existingVehicle = await get('SELECT * FROM vehicles WHERE id = ?', [req.params.id]);
+
+    if (!existingVehicle) {
+      req.flash('error_msg', 'Veicolo non trovato');
+      return res.redirect('/admin/vehicles');
+    }
+
     // Verifica targa univoca (escludi veicolo corrente)
     const existing = await get(
       'SELECT id FROM vehicles WHERE targa = ? AND id != ?',
@@ -524,13 +585,43 @@ router.post('/vehicles/edit/:id', async (req, res) => {
       return res.redirect(`/admin/vehicles/edit/${req.params.id}`);
     }
 
+    // Gestisci i file PDF: usa i nuovi se caricati, altrimenti mantieni i vecchi
+    const libretto_pdf = req.files?.libretto_pdf ? req.files.libretto_pdf[0].path : existingVehicle.libretto_pdf;
+    const assicurazione_pdf = req.files?.assicurazione_pdf ? req.files.assicurazione_pdf[0].path : existingVehicle.assicurazione_pdf;
+    const contratto_pdf = req.files?.contratto_pdf ? req.files.contratto_pdf[0].path : existingVehicle.contratto_pdf;
+
+    // Se sono stati caricati nuovi file, elimina i vecchi
+    if (req.files?.libretto_pdf && existingVehicle.libretto_pdf) {
+      try {
+        fs.unlinkSync(existingVehicle.libretto_pdf);
+      } catch (err) {
+        console.error('Errore eliminazione vecchio libretto:', err);
+      }
+    }
+    if (req.files?.assicurazione_pdf && existingVehicle.assicurazione_pdf) {
+      try {
+        fs.unlinkSync(existingVehicle.assicurazione_pdf);
+      } catch (err) {
+        console.error('Errore eliminazione vecchia assicurazione:', err);
+      }
+    }
+    if (req.files?.contratto_pdf && existingVehicle.contratto_pdf) {
+      try {
+        fs.unlinkSync(existingVehicle.contratto_pdf);
+      } catch (err) {
+        console.error('Errore eliminazione vecchio contratto:', err);
+      }
+    }
+
     // Aggiorna veicolo
     await run(
       `UPDATE vehicles 
        SET targa = ?, modello = ?, anno = ?, km_attuali = ?, note_manutenzione = ?, attivo = ?,
+           libretto_pdf = ?, assicurazione_pdf = ?, contratto_pdf = ?,
            ultima_modifica = CURRENT_TIMESTAMP 
        WHERE id = ?`,
-      [targa.toUpperCase(), modello, anno, km_attuali || 0, note_manutenzione || null, attivo ? 1 : 0, req.params.id]
+      [targa.toUpperCase(), modello, anno, km_attuali || 0, note_manutenzione || null, attivo ? 1 : 0, 
+       libretto_pdf, assicurazione_pdf, contratto_pdf, req.params.id]
     );
 
     // Log attività
@@ -559,6 +650,29 @@ router.post('/vehicles/delete/:id', async (req, res) => {
       return res.json({ success: false, message: 'Veicolo non trovato' });
     }
 
+    // Elimina i file PDF associati
+    if (vehicle.libretto_pdf) {
+      try {
+        fs.unlinkSync(vehicle.libretto_pdf);
+      } catch (err) {
+        console.error('Errore eliminazione libretto:', err);
+      }
+    }
+    if (vehicle.assicurazione_pdf) {
+      try {
+        fs.unlinkSync(vehicle.assicurazione_pdf);
+      } catch (err) {
+        console.error('Errore eliminazione assicurazione:', err);
+      }
+    }
+    if (vehicle.contratto_pdf) {
+      try {
+        fs.unlinkSync(vehicle.contratto_pdf);
+      } catch (err) {
+        console.error('Errore eliminazione contratto:', err);
+      }
+    }
+
     await run('DELETE FROM vehicles WHERE id = ?', [req.params.id]);
 
     // Log attività
@@ -574,6 +688,54 @@ router.post('/vehicles/delete/:id', async (req, res) => {
   } catch (error) {
     console.error('Errore eliminazione veicolo:', error);
     res.json({ success: false, message: 'Errore durante l\'eliminazione del veicolo' });
+  }
+});
+
+// Route per scaricare i documenti PDF dei veicoli
+router.get('/vehicles/document/:id/:documentType', async (req, res) => {
+  try {
+    const { id, documentType } = req.params;
+
+    // Validazione tipo documento
+    const allowedTypes = ['libretto_pdf', 'assicurazione_pdf', 'contratto_pdf'];
+    if (!allowedTypes.includes(documentType)) {
+      return res.status(400).send('Tipo di documento non valido');
+    }
+
+    // Ottieni il veicolo
+    const vehicle = await get('SELECT * FROM vehicles WHERE id = ?', [id]);
+
+    if (!vehicle) {
+      return res.status(404).send('Veicolo non trovato');
+    }
+
+    const filePath = vehicle[documentType];
+
+    if (!filePath) {
+      return res.status(404).send('Documento non trovato');
+    }
+
+    // Verifica che il file esista
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).send('File non trovato sul server');
+    }
+
+    // Imposta il nome del file per il download
+    const fileName = path.basename(filePath);
+
+    // Invia il file
+    res.download(filePath, fileName, (err) => {
+      if (err) {
+        console.error('Errore download documento:', err);
+        if (!res.headersSent) {
+          res.status(500).send('Errore durante il download del documento');
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Errore scaricamento documento:', error);
+    res.status(500).send('Errore durante l\'operazione');
   }
 });
 
